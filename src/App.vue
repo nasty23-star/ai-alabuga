@@ -9,6 +9,7 @@ import { useGamificationStore } from '@/stores/gamification'
 import { useSessionStore } from '@/stores/session'
 import { bindBackButton } from '@/telegram'
 
+
 const route = useRoute()
 const router = useRouter()
 const session = useSessionStore()
