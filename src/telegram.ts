@@ -15,6 +15,10 @@ export function inTelegram() {
   return Boolean(window.Telegram?.WebApp)
 }
 
+export function closeMiniApp() {
+  window.Telegram?.WebApp?.close()
+}
+
 export function initTelegram() {
   const app = window.Telegram?.WebApp
   if (!app) return

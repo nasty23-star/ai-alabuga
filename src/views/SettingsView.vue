@@ -5,7 +5,7 @@ import { ApiError, getApi } from '@/api'
 import type { SphereId } from '@/api/types'
 import { useGamificationStore } from '@/stores/gamification'
 import { useSessionStore } from '@/stores/session'
-import { useTelegramButtons } from '@/telegram'
+import { closeMiniApp, useTelegramButtons } from '@/telegram'
 
 const spheres: { id: SphereId; title: string }[] = [
   { id: 'procurement', title: 'Закупки' },
@@ -94,5 +94,6 @@ function onToggle() {
     <p v-if="message" class="muted">{{ message }}</p>
     <p v-if="error" class="error">{{ error }}</p>
     <button class="btn ghost" type="button" @click="logout">Выйти</button>
+    <button class="btn ghost" type="button" @click="closeMiniApp">Закрыть мини-апп</button>
   </main>
 </template>
