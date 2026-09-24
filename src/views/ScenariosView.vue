@@ -3,9 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import badgeIcon from '@/assets/onboarding/badge.svg'
 import chartCard from '@/assets/onboarding/chart-card.svg'
-import chevron from '@/assets/onboarding/chevron.svg'
 import flame from '@/assets/onboarding/flame.svg'
-import spark from '@/assets/onboarding/spark.svg'
 import wordmark from '@/assets/onboarding/wordmark.svg'
 import { ApiError, getApi } from '@/api'
 import type { NegotiationListItem, ScenariosResponse } from '@/api/types'
@@ -38,6 +36,21 @@ onMounted(async () => {
     error.value = caught instanceof ApiError ? caught.message : 'Не удалось загрузить сценарии'
   }
 })
+
+async function openReview() {
+  error.value = ''
+  try {
+    const page = await getApi().listNegotiations(20, null)
+    const finished = page.items.find((item) => item.status === 'finished')
+    if (!finished) {
+      error.value = 'Разбор появится после первых переговоров'
+      return
+    }
+    await router.push({ name: 'debrief', params: { id: finished.id }, query: { link: '1' } })
+  } catch (caught) {
+    error.value = caught instanceof ApiError ? caught.message : 'Не удалось открыть разбор'
+  }
+}
 </script>
 
 <template>
@@ -53,13 +66,6 @@ onMounted(async () => {
       <span class="pill" style="color: #3160f4"><img :src="badgeIcon" alt="" width="16" height="16" /> {{ earned }} бейджей</span>
     </div>
     <BadgeRow v-if="gamification.active" :badges="badges" />
-    <!-- <button class="card row" type="button" style="justify-content: space-between" @click="router.push('/wizard')">
-      <span class="row">
-        <span style="width: 48px; height: 48px; border-radius: 16px; background: #d6e6ff; display: grid; place-items: center"><img :src="spark" alt="" width="20" height="20" /></span>
-        <span><b>Свой собеседник</b><span class="muted" style="display: block">Копия реального человека</span></span>
-      </span>
-      <img :src="chevron" alt="" width="22" height="22" />
-    </button> -->
     <button class="btn tg-hide" type="button" @click="router.push('/wizard')">Новые переговоры</button>
     <p v-if="error" class="error">{{ error }}</p>
     <article v-for="theme in data?.themes ?? []" :key="theme.theme" class="card" style="display: flex; flex-direction: column; gap: 8px">
@@ -67,9 +73,9 @@ onMounted(async () => {
       <p class="muted">{{ theme.tagline }}</p>
       <button v-for="variant in theme.variants" :key="variant.id" class="btn ghost" type="button" style="text-align: left; color: #1a5cff" @click="router.push(`/wizard/${variant.id}`)">{{ variant.seat }}</button>
     </article>
-    <article class="card row">
+    <button class="card row" type="button" @click="openReview">
       <img :src="chartCard" alt="" width="22" height="22" />
       <span><b>Здесь будет твой разбор</b><span class="muted" style="display: block">Появится после первых переговоров</span></span>
-    </article>
+    </button>
   </main>
 </template>

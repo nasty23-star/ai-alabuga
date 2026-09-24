@@ -50,6 +50,7 @@ const step = ref<'summary' | 'metric' | 'glossary' | 'links'>('summary')
 const selectedKey = ref('')
 const sheet = ref(false)
 const includeTranscript = ref(false)
+const ttlHours = ref(24)
 const pending = ref(false)
 const copied = ref(false)
 const links = ref<ShareItem[]>([])
@@ -69,6 +70,10 @@ onMounted(async () => {
     const [report, state] = await Promise.all([getApi().debrief(id.value), getApi().getNegotiation(id.value)])
     debrief.value = report
     negotiation.value = state
+    if (route.query.link === '1') {
+      step.value = 'links'
+      await ensureLink()
+    }
   } catch (caught) {
     error.value = caught instanceof ApiError ? caught.message : 'Разбор недоступен'
   }
@@ -111,7 +116,7 @@ async function ensureLink() {
   error.value = ''
   pending.value = true
   try {
-    const created = await getApi().share(id.value, 24, includeTranscript.value)
+    const created = await getApi().share(id.value, ttlHours.value, includeTranscript.value)
     const item: ShareItem = { id: created.id, url: created.url, expiresAt: created.expires_at, revoked: false }
     links.value.unshift(item)
     copied.value = false
@@ -164,7 +169,15 @@ useTelegramButtons(() => {
   if (step.value === 'metric' || step.value === 'glossary') {
     return { main: { text: 'Все метрики', onClick: () => { step.value = 'summary' } }, back: () => { step.value = 'summary' } }
   }
-  if (step.value === 'links') return { main: null, back: () => { step.value = 'summary' } }
+  if (step.value === 'links') {
+    return {
+      main: null,
+      back: () => {
+        if (route.query.link === '1') void router.push('/scenarios')
+        else { sheet.value = true; step.value = 'summary' }
+      },
+    }
+  }
   return { main: { text: 'Новый созвон', onClick: again }, back: () => { void router.push('/scenarios') } }
 })
 </script>
@@ -180,11 +193,13 @@ useTelegramButtons(() => {
         <b>{{ score ?? '—' }}</b>
         <span>Итоговый балл</span>
       </section>
-      <button v-for="metric in debrief.metrics" :key="metric.key" class="metric" type="button" @click="openMetric(metric.key)">
-        <i :class="metric.zone" />
-        <span>{{ metric.title }}</span>
-        <b>{{ formatMetric(metric) }}</b>
-      </button>
+      <div class="metrics">
+        <button v-for="metric in debrief.metrics" :key="metric.key" class="metric" type="button" @click="openMetric(metric.key)">
+          <span>{{ metric.title }}</span>
+          <b>{{ metric.available ? formatMetric(metric) : '—' }}</b>
+          <em :class="metric.available ? 'good' : 'muted'">{{ metric.available ? 'считается' : (metric.unavailable_reason ?? 'нет данных') }}</em>
+        </button>
+      </div>
       <section class="split">
         <article class="card">
           <p class="muted">Итог сделки</p>
@@ -229,28 +244,34 @@ useTelegramButtons(() => {
     </template>
 
     <template v-else-if="step === 'links'">
-      <button class="back" type="button" @click="sheet = true; step = 'summary'"><img :src="backIcon" alt="" width="20" height="20" /></button>
-      <h1>Мои ссылки</h1>
-      <p v-if="!links.length" class="muted">Ссылок пока нет. Поделись разбором с руководителем.</p>
-      <article v-for="item in links" :key="item.id" class="card link-row">
-        <div>
-          <b>Ссылка на разбор</b>
-          <p class="muted">{{ linkState(item) }} · до {{ new Date(item.expiresAt).toLocaleString() }}</p>
-        </div>
-        <button v-if="!item.revoked && linkState(item) === 'активна'" class="btn slim" type="button" @click="revoke(item)">Отозвать</button>
+      <button class="back" type="button" @click="route.query.link === '1' ? router.push('/scenarios') : (sheet = true, step = 'summary')"><img :src="backIcon" alt="" width="20" height="20" /></button>
+      <h1>Ссылка на разбор</h1>
+      <p class="muted">Руководитель увидит итог. Ссылка действует 24 часа.</p>
+      <p v-if="!links.length" class="muted">Ссылок пока нет.</p>
+      <article v-for="item in links" :key="item.id" class="card stack">
+        <b>{{ negotiation?.scenario.title ?? 'Разбор' }}</b>
+        <p class="muted">{{ linkState(item) }} · до {{ new Date(item.expiresAt).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }}</p>
+        <p class="link-url">{{ absoluteUrl(item.url) }}</p>
+        <button class="btn" type="button" :disabled="pending || item.revoked" @click="copyLink">{{ copied ? 'Ссылка скопирована' : 'Скопировать ссылку' }}</button>
+        <button v-if="!item.revoked && linkState(item) === 'активна'" class="btn ghost" type="button" @click="revoke(item)">Отозвать</button>
       </article>
     </template>
 
     <div v-if="sheet" class="sheet-backdrop" @click.self="sheet = false">
       <section class="sheet">
         <h2>Поделиться с руководителем</h2>
-        <p class="muted">Увидит итог, рост и транскрипт, если он включён. Ссылка действует 24 часа.</p>
+        <p class="muted">Увидит итоговый балл и «Итог сделки». «Мой рост» и транскрипт скрыты, пока их не включить.</p>
+        <p class="muted">Ссылка действует</p>
+        <div class="ttl">
+          <button type="button" :class="{ on: ttlHours === 24 }" @click="ttlHours = 24">24 часа</button>
+          <button type="button" :class="{ on: ttlHours === 720 }" @click="ttlHours = 720">30 дней</button>
+        </div>
         <label class="share-toggle">
-          Показать транскрипт
+          <span>Показать транскрипт<small>По умолчанию скрыт</small></span>
           <button class="toggle" :class="{ on: includeTranscript }" type="button" @click="includeTranscript = !includeTranscript"><i /></button>
         </label>
         <button class="btn tg-hide" type="button" :disabled="pending" @click="sendTelegram">Отправить в Telegram</button>
-        <button class="btn ghost" type="button" :disabled="pending" @click="copyLink">{{ copied ? 'Ссылка скопирована' : 'Скопировать ссылку' }}</button>
+        <button class="linkish" type="button" :disabled="pending" @click="copyLink">{{ copied ? 'Ссылка скопирована' : 'Скопировать ссылку' }}</button>
         <button class="linkish" type="button" @click="sheet = false; step = 'links'">Мои ссылки</button>
       </section>
     </div>
