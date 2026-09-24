@@ -53,13 +53,13 @@ onMounted(async () => {
       <span class="pill" style="color: #3160f4"><img :src="badgeIcon" alt="" width="16" height="16" /> {{ earned }} бейджей</span>
     </div>
     <BadgeRow v-if="gamification.active" :badges="badges" />
-    <button class="card row" type="button" style="justify-content: space-between" @click="router.push('/wizard')">
+    <!-- <button class="card row" type="button" style="justify-content: space-between" @click="router.push('/wizard')">
       <span class="row">
         <span style="width: 48px; height: 48px; border-radius: 16px; background: #d6e6ff; display: grid; place-items: center"><img :src="spark" alt="" width="20" height="20" /></span>
         <span><b>Свой собеседник</b><span class="muted" style="display: block">Копия реального человека</span></span>
       </span>
       <img :src="chevron" alt="" width="22" height="22" />
-    </button>
+    </button> -->
     <button class="btn tg-hide" type="button" @click="router.push('/wizard')">Новые переговоры</button>
     <p v-if="error" class="error">{{ error }}</p>
     <article v-for="theme in data?.themes ?? []" :key="theme.theme" class="card" style="display: flex; flex-direction: column; gap: 8px">

@@ -40,7 +40,7 @@ img { display: block; }
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 16px 16px 96px;
+  padding: 16px 16px 112px;
   gap: 12px;
 }
 
@@ -229,14 +229,26 @@ h2 { font-size: 18px; font-weight: 700; }
   bottom: 0;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  height: 72px;
-  align-items: center;
+  align-items: start;
   background: #fff;
   border-radius: 34px 34px 0 0;
-  padding-bottom: env(safe-area-inset-bottom);
+  padding: 10px 4px calc(10px + env(safe-area-inset-bottom));
 }
-.nav a { display: grid; place-items: center; opacity: 0.45; }
-.nav a.router-link-active { opacity: 1; }
+.nav a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: #9ca3af;
+  text-decoration: none;
+  font-size: 10px;
+  line-height: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+.nav a.is-active { color: var(--blue); }
+.nav-icon { display: grid; place-items: center; height: 28px; }
+.nav-icon svg { width: 24px; height: 24px; }
 
 .bubble {
   max-width: 86%;
