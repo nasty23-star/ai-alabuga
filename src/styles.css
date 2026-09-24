@@ -92,6 +92,7 @@ h2 { font-size: 18px; font-weight: 700; }
   text-align: left;
   border: 0;
   width: 100%;
+  margin-bottom: 12px;
 }
 
 .chip {

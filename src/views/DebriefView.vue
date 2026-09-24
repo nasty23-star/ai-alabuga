@@ -202,7 +202,7 @@ function again() {
 
     <template v-else-if="debrief && step === 'glossary'">
       <button class="back" type="button" @click="step = 'summary'"><img :src="backIcon" alt="" width="20" height="20" /></button>
-      <h1>Что значит метрики</h1>
+      <h1>Что значат метрики</h1>
       <article v-for="metric in debrief.metrics" :key="metric.key" class="card glossary">
         <i :class="metric.zone" />
         <div>
