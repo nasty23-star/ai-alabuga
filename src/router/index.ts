@@ -8,12 +8,14 @@ import OnboardingView from '@/views/OnboardingView.vue'
 import ScenariosView from '@/views/ScenariosView.vue'
 import SettingsView from '@/views/SettingsView.vue'
 import SharedView from '@/views/SharedView.vue'
+import WelcomeView from '@/views/WelcomeView.vue'
 import WizardView from '@/views/WizardView.vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     { path: '/auth', name: 'auth', component: AuthView, meta: { public: true, bare: true } },
+    { path: '/welcome', name: 'welcome', component: WelcomeView, meta: { bare: true } },
     { path: '/onboarding', name: 'onboarding', component: OnboardingView, meta: { bare: true } },
     { path: '/', redirect: '/scenarios' },
     { path: '/scenarios', name: 'scenarios', component: ScenariosView },
@@ -26,10 +28,21 @@ const router = createRouter({
   ],
 })
 
+let entryGreeted = false
+
+function greetIfReturning(session: ReturnType<typeof useSessionStore>) {
+  if (!session.greetOnEntry || !session.onboarded || entryGreeted) return null
+  entryGreeted = true
+  return { name: 'welcome' as const }
+}
+
 router.beforeEach((to) => {
   const session = useSessionStore()
   if (to.meta.public) {
-    if (to.name === 'auth' && session.isAuthenticated) return session.onboarded ? '/scenarios' : '/onboarding'
+    if (to.name === 'auth' && session.isAuthenticated) {
+      if (!session.onboarded) return '/onboarding'
+      return greetIfReturning(session) ?? '/scenarios'
+    }
     return true
   }
   if (!session.isAuthenticated) {
@@ -37,7 +50,11 @@ router.beforeEach((to) => {
     return { name: 'auth', query: { next: to.fullPath } }
   }
   if (!session.onboarded && to.name !== 'onboarding') return { name: 'onboarding' }
-  return true
+  if (to.name === 'welcome') {
+    entryGreeted = true
+    return true
+  }
+  return greetIfReturning(session) ?? true
 })
 
 export default router

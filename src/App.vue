@@ -26,7 +26,7 @@ function goBack() {
 }
 
 watch(() => route.fullPath, () => {
-  bindBackButton(route.name !== 'scenarios' && route.name !== 'auth', goBack)
+  bindBackButton(route.name !== 'scenarios' && route.name !== 'auth' && route.name !== 'welcome', goBack)
   gamification.hydrate()
 }, { immediate: true })
 

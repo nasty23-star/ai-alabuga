@@ -24,6 +24,7 @@ export const useSessionStore = defineStore('session', () => {
   const account = ref<Account | null>(readAccount())
   const onboarded = ref(localStorage.getItem(ONBOARD_KEY) === '1')
   const returnPath = ref('/scenarios')
+  const greetOnEntry = ref(Boolean(token.value && login.value))
 
   function persist() {
     if (token.value) localStorage.setItem(TOKEN_KEY, token.value)
@@ -48,22 +49,26 @@ export const useSessionStore = defineStore('session', () => {
     account.value = null
     login.value = ''
     onboarded.value = false
+    greetOnEntry.value = false
     persist()
   }
 
   async function signIn(name: string, password: string) {
     const result = await getApi().signIn(name, password)
     applyAuth(result.token, result.account, name)
+    greetOnEntry.value = true
   }
 
   async function signUp(name: string, password: string) {
     const result = await getApi().signUp(name, password)
     applyAuth(result.token, result.account, name)
+    greetOnEntry.value = false
   }
 
   async function guest() {
     const result = await getApi().guest()
     applyAuth(result.token, result.account, '')
+    greetOnEntry.value = false
   }
 
   async function upgrade(name: string, password: string) {
@@ -113,6 +118,7 @@ export const useSessionStore = defineStore('session', () => {
     account,
     onboarded,
     returnPath,
+    greetOnEntry,
     isAuthenticated,
     signIn,
     signUp,

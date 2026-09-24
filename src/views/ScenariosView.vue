@@ -40,7 +40,7 @@ onMounted(async () => {
       <img :src="wordmark" alt="Вершина" height="22" />
       <span class="pill" style="width: 44px; height: 44px; justify-content: center; color: #3160f4">Я</span>
     </header>
-    <h1 style="font-size: 26px; letter-spacing: -0.78px">Привет, {{ session.account?.display_name || 'Анна' }}!</h1>
+    <h1 style="font-size: 26px; letter-spacing: -0.78px">Привет, {{ session.account?.display_name || 'Мистер X' }}!</h1>
     <p class="body">Начнём первое восхождение</p>
     <div v-if="gamification.active" class="row">
       <span class="pill" style="color: #ea580c"><img :src="flame" alt="" width="16" height="16" /> {{ earned }} дней</span>

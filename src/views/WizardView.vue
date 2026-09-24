@@ -127,7 +127,7 @@ async function start() {
 <template>
   <main class="screen">
     <p class="muted">Шаг {{ step + 1 }} из {{ titles.length }} · {{ titles[step] }}</p>
-    <h1>{{ card?.theme_title ?? 'Свой сценарий' }}</h1>
+    <h1>{{ card?.theme_title }}</h1>
     <p v-if="card" class="muted">{{ card.seat }}. {{ card.context }}</p>
     <p v-if="error" class="error">{{ error }}</p>
 

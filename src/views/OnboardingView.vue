@@ -45,7 +45,7 @@ async function save() {
   error.value = ''
   pending.value = true
   try {
-    await session.saveProfile(name.value.trim() || 'Анна', selected.value)
+    await session.saveProfile(name.value.trim() || 'Мистер X', selected.value)
     await router.push('/scenarios')
   } catch (caught) {
     error.value = caught instanceof ApiError ? caught.message : 'Не удалось сохранить'
