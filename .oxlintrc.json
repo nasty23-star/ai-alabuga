@@ -1,0 +1,11 @@
+{
+  "plugins": ["vue", "typescript", "oxc"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "env": {
+    "browser": true
+  },
+  "ignorePatterns": ["dist", "node_modules"]
+}
