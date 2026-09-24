@@ -7,9 +7,27 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet" />
     <title>Арена переговоров</title>
+    <style>
+      html, body { margin: 0; background: #f5f7fb; }
+    </style>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script type="module" crossorigin src="/ai-alabuga/assets/index-C_Vb2YAo.js"></script>
-    <link rel="stylesheet" crossorigin href="/ai-alabuga/assets/index-DOOuePxP.css">
+    <script>
+      (function () {
+        var app = window.Telegram && window.Telegram.WebApp
+        if (!app) return
+        var root = document.documentElement
+        root.style.setProperty('--tg-theme-bg-color', '#f5f7fb')
+        root.style.setProperty('--tg-theme-secondary-bg-color', '#ffffff')
+        root.style.setProperty('--tg-theme-header-bg-color', '#c5daf8')
+        root.style.setProperty('--tg-theme-button-color', '#1a5cff')
+        root.style.setProperty('--tg-theme-button-text-color', '#ffffff')
+        app.setHeaderColor('#c5daf8')
+        app.setBackgroundColor('#f5f7fb')
+        if (app.setBottomBarColor) app.setBottomBarColor('#ffffff')
+      })()
+    </script>
+    <script type="module" crossorigin src="/ai-alabuga/assets/index-CdyDvQAD.js"></script>
+    <link rel="stylesheet" crossorigin href="/ai-alabuga/assets/index-CbqnBh5G.css">
   </head>
   <body>
     <div id="app"></div>
