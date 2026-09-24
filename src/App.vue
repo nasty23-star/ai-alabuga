@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import navBell from '@/assets/onboarding/nav-bell.svg'
-import navChart from '@/assets/onboarding/nav-chart.svg'
-import navFile from '@/assets/onboarding/nav-file.svg'
-import navHome from '@/assets/onboarding/nav-home.svg'
+import navBell from '@/assets/onboarding/nav-bell.svg?raw'
+import navChart from '@/assets/onboarding/nav-chart.svg?raw'
+import navFile from '@/assets/onboarding/nav-file.svg?raw'
+import navHome from '@/assets/onboarding/nav-home.svg?raw'
 import SplashScreen from '@/components/SplashScreen.vue'
 import { useGamificationStore } from '@/stores/gamification'
 import { useSessionStore } from '@/stores/session'
@@ -19,6 +19,16 @@ const gamification = useGamificationStore()
 const booting = ref(true)
 const bare = computed(() => Boolean(route.meta.bare))
 const showNav = computed(() => !booting.value && session.isAuthenticated && session.onboarded && !bare.value && route.name !== 'chat' && route.name !== 'wizard')
+const navItems = [
+  { to: '/scenarios', label: 'Сценарии', icon: navHome, match: ['scenarios'] },
+  { to: '/wizard', label: 'Новые переговоры', icon: navFile, match: ['wizard'] },
+  { to: '/history', label: 'Разбор', icon: navChart, match: ['history', 'debrief'] },
+  { to: '/settings', label: 'Профиль', icon: navBell, match: ['settings'] },
+]
+
+function navActive(match: string[]) {
+  return match.includes(String(route.name))
+}
 
 watch(booting, (value) => {
   if (!value) return
@@ -60,10 +70,10 @@ onMounted(async () => {
       <SplashScreen v-if="booting" />
       <router-view />
       <nav v-if="showNav" class="nav">
-        <router-link to="/scenarios" aria-label="Сценарии"><img :src="navHome" alt="" width="28" height="28" /></router-link>
-        <router-link to="/wizard" aria-label="Новые переговоры"><img :src="navFile" alt="" width="24" height="24" /></router-link>
-        <router-link to="/history" aria-label="Разбор"><img :src="navChart" alt="" width="28" height="28" /></router-link>
-        <router-link to="/settings" aria-label="Профиль"><img :src="navBell" alt="" width="28" height="28" /></router-link>
+        <router-link v-for="item in navItems" :key="item.to" :to="item.to" :class="{ 'is-active': navActive(item.match) }" :aria-current="navActive(item.match) ? 'page' : undefined">
+          <span class="nav-icon" v-html="item.icon" />
+          <span>{{ item.label }}</span>
+        </router-link>
       </nav>
     </div>
   </div>
