@@ -21,6 +21,10 @@ const bare = computed(() => Boolean(route.meta.bare))
 const showNav = computed(() => !booting.value && session.isAuthenticated && session.onboarded && !bare.value && route.name !== 'chat' && route.name !== 'wizard')
 
 function goBack() {
+  if (route.name === 'debrief' || route.name === 'chat') {
+    void router.push('/scenarios')
+    return
+  }
   if (window.history.length > 1) router.back()
   else void router.push('/scenarios')
 }

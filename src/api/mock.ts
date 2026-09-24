@@ -181,8 +181,9 @@ const emptyDb = (): Db => ({ users: [], tokens: {}, profiles: {}, negotiations: 
 
 function load(): Db {
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(STORAGE_KEY) ?? sessionStorage.getItem(STORAGE_KEY)
     if (!raw) return emptyDb()
+    if (!localStorage.getItem(STORAGE_KEY)) localStorage.setItem(STORAGE_KEY, raw)
     return JSON.parse(raw) as Db
   } catch {
     return emptyDb()
@@ -190,7 +191,7 @@ function load(): Db {
 }
 
 function save(db: Db) {
-  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(db))
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(db))
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -273,11 +274,16 @@ function outcomeScore(terms: Terms, agreed: AgreedTerm[]): number {
   return Math.round(Math.min(100, total))
 }
 
+let expireSession = () => {}
+
 function userByToken(db: Db, token: string | null): UserRow {
   if (!token) fail(401, 'invalid_credentials', 'Нужно войти')
   const id = db.tokens[token]
   const user = db.users.find((item) => item.account.id === id)
-  if (!user) fail(401, 'invalid_credentials', 'Токен отозван')
+  if (!user) {
+    expireSession()
+    fail(401, 'invalid_credentials', 'Токен отозван')
+  }
   return user
 }
 
@@ -359,7 +365,8 @@ function remember<T>(db: Db, key: string, value: T): T {
   return value
 }
 
-export function createMockApi(getToken: () => string | null): Api {
+export function createMockApi(getToken: () => string | null, expired: () => void = () => {}): Api {
+  expireSession = expired
   return {
     async signUp(login, password) {
       const db = load()

@@ -22,6 +22,7 @@ interface TelegramWebApp {
   setHeaderColor: (color: string) => void
   setBackgroundColor: (color: string) => void
   BackButton: TelegramBackButton
+  openTelegramLink?: (url: string) => void
   themeParams: Record<string, string | undefined>
   initData: string
 }

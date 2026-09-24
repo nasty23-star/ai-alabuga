@@ -1,85 +1,243 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import backIcon from '@/assets/onboarding/back.svg'
 import { ApiError, getApi } from '@/api'
-import type { Debrief, NegotiationListItem, SharedLink } from '@/api/types'
-import BadgeRow from '@/components/BadgeRow.vue'
-import { collectBadges } from '@/gamification/badges'
-import { useGamificationStore } from '@/stores/gamification'
+import type { Debrief, Metric, NegotiationState } from '@/api/types'
+
+interface ShareItem {
+  id: string
+  url: string
+  expiresAt: string
+  revoked: boolean
+}
+
+const COPY: Record<string, { en: string; text: string }> = {
+  filler_density: {
+    en: 'Filler Density',
+    text: 'Как часто в репликах звучат слова-паразиты. Чем меньше, тем чище речь.',
+  },
+  open_question_ratio: {
+    en: 'Open Question Ratio',
+    text: 'Доля открытых вопросов — «почему», «как», «что для вас важно» — среди всех твоих вопросов. Открытые выясняют интересы собеседника, закрытые («вы согласны?») — нет.',
+  },
+  concession_discipline: {
+    en: 'Concession Discipline',
+    text: 'Доля уступок, сделанных в обмен на что-то. 100% — ни одной уступки просто так.',
+  },
+  own_outcome: {
+    en: 'Own Outcome',
+    text: 'Насколько итог хорош по твоим приоритетам из мастера: 0 — твоя граница, 100 — идеал.',
+  },
+  batna_gain: {
+    en: 'BATNA Gain',
+    text: 'Насколько сделка лучше плана Б. Минус — лучше было не договариваться. Только если план Б задан числом.',
+  },
+  reservation_point_discipline: {
+    en: 'Reservation Point Discipline',
+    text: 'Не согласился ли ты на условия хуже своей границы: да или нет.',
+  },
+}
 
 const route = useRoute()
-const gamification = useGamificationStore()
-const debrief = ref<Debrief | null>(null)
-const history = ref<NegotiationListItem[]>([])
-const error = ref('')
-const link = ref<SharedLink | null>(null)
-const ttl = ref(72)
-const includeTranscript = ref(false)
+const router = useRouter()
 const id = computed(() => String(route.params.id))
-const badges = computed(() => collectBadges(history.value))
+const debrief = ref<Debrief | null>(null)
+const negotiation = ref<NegotiationState | null>(null)
+const error = ref('')
+const step = ref<'summary' | 'metric' | 'glossary' | 'links'>('summary')
+const selectedKey = ref('')
+const sheet = ref(false)
+const includeTranscript = ref(false)
+const pending = ref(false)
+const copied = ref(false)
+const links = ref<ShareItem[]>([])
+
+const selected = computed(() => debrief.value?.metrics.find((metric) => metric.key === selectedKey.value) ?? null)
+const score = computed(() => {
+  const own = debrief.value?.outcome.own_outcome
+  if (own != null) return Math.round(own)
+  const numbers = (debrief.value?.metrics ?? []).filter((metric) => metric.available && metric.unit !== 'count' && typeof metric.value === 'number')
+  if (!numbers.length) return null
+  const total = numbers.reduce((sum, metric) => sum + Number(metric.value), 0)
+  return Math.round(total / numbers.length)
+})
 
 onMounted(async () => {
-  gamification.hydrate()
   try {
-    debrief.value = await getApi().debrief(id.value)
-    if (gamification.active) {
-      const page = await getApi().listNegotiations(20, null)
-      history.value = page.items
-    }
+    const [report, state] = await Promise.all([getApi().debrief(id.value), getApi().getNegotiation(id.value)])
+    debrief.value = report
+    negotiation.value = state
   } catch (caught) {
     error.value = caught instanceof ApiError ? caught.message : 'Разбор недоступен'
   }
 })
 
-async function share() {
+function formatMetric(metric: Metric) {
+  if (!metric.available) return metric.unavailable_reason ?? '—'
+  if (metric.unit === 'boolean') return metric.value ? 'Да' : 'Нет'
+  if (metric.unit === 'percent') return `${metric.value}%`
+  return String(metric.value ?? '—')
+}
+
+function ratio(metric: Metric) {
+  if (!metric.available) return 0
+  if (typeof metric.value === 'boolean') return metric.value ? 100 : 8
+  if (typeof metric.value !== 'number') return 0
+  if (metric.unit === 'count') return Math.max(0, Math.min(100, 100 - metric.value * 12))
+  return Math.max(0, Math.min(100, metric.value))
+}
+
+function openMetric(key: string) {
+  selectedKey.value = key
+  step.value = 'metric'
+}
+
+function absoluteUrl(url: string) {
+  if (url.startsWith('http')) return url
+  const path = url.startsWith('/') ? url : `/${url}`
+  return `${location.origin}${import.meta.env.BASE_URL}#${path}`
+}
+
+function linkState(item: ShareItem) {
+  if (item.revoked) return 'отозвана'
+  if (new Date(item.expiresAt).getTime() < Date.now()) return 'срок истёк'
+  return 'активна'
+}
+
+async function ensureLink() {
+  if (links.value[0] && !links.value[0].revoked) return links.value[0]
   error.value = ''
+  pending.value = true
   try {
-    link.value = await getApi().share(id.value, ttl.value, includeTranscript.value)
+    const created = await getApi().share(id.value, 24, includeTranscript.value)
+    const item: ShareItem = { id: created.id, url: created.url, expiresAt: created.expires_at, revoked: false }
+    links.value.unshift(item)
+    copied.value = false
+    return item
   } catch (caught) {
     error.value = caught instanceof ApiError ? caught.message : 'Не удалось открыть ссылку'
+    return null
+  } finally {
+    pending.value = false
   }
 }
 
-async function revoke() {
-  if (!link.value) return
-  await getApi().revokeShare(link.value.id)
-  link.value = null
+async function copyLink() {
+  const created = await ensureLink()
+  if (!created) return
+  try {
+    await navigator.clipboard.writeText(absoluteUrl(created.url))
+    copied.value = true
+  } catch {
+    error.value = 'Ссылка создана. Скопируйте её из списка «Мои ссылки».'
+  }
+}
+
+async function sendTelegram() {
+  const created = await ensureLink()
+  if (!created) return
+  const share = `https://t.me/share/url?url=${encodeURIComponent(absoluteUrl(created.url))}&text=${encodeURIComponent('Разбор переговоров')}`
+  const app = window.Telegram?.WebApp
+  if (app?.openTelegramLink) app.openTelegramLink(share)
+  else window.open(share, '_blank', 'noopener')
+}
+
+async function revoke(item: ShareItem) {
+  await getApi().revokeShare(item.id)
+  item.revoked = true
+}
+
+function again() {
+  const scenarioId = negotiation.value?.scenario.id
+  void router.push(scenarioId ? `/wizard/${scenarioId}` : '/wizard')
 }
 </script>
 
 <template>
-  <main class="screen">
-    <h1>Твой разбор</h1>
+  <main class="screen debrief">
     <p v-if="error" class="error">{{ error }}</p>
-    <section v-if="debrief" class="card stack">
-      <b>Исход: {{ debrief.outcome.type === 'deal' ? 'сделка' : debrief.outcome.type === 'partial_deal' ? 'частичная сделка' : 'без сделки' }}</b>
-      <p v-if="debrief.outcome.own_outcome != null">Выгода: {{ debrief.outcome.own_outcome }}</p>
-      <p v-for="term in debrief.outcome.terms ?? []" :key="term.type_id">{{ term.name }}: {{ term.value }} {{ term.unit }}</p>
-    </section>
-    <section v-if="gamification.active" class="stack">
-      <h2>Геймификация</h2>
-      <BadgeRow :badges="badges" />
-    </section>
-    <article v-for="metric in debrief?.metrics ?? []" :key="metric.key" class="card">
-      <b>{{ metric.title }}</b>
-      <p :class="`zone-${metric.zone}`">
-        {{ metric.available ? metric.value : metric.unavailable_reason }}
-        <span v-if="metric.available && metric.unit !== 'boolean'"> {{ metric.unit }}</span>
-      </p>
-    </article>
-    <article v-for="(item, index) in debrief?.guidance ?? []" :key="index" class="card stack">
-      <b>{{ item.claim }}</b>
-      <p>{{ item.effect }}</p>
-      <p class="muted">{{ item.advice }}</p>
-      <p class="muted">Ход {{ item.evidence.turn_index }}: «{{ item.evidence.quote }}»</p>
-    </article>
-    <form class="card stack" @submit.prevent="share">
-      <h2>Для руководителя</h2>
-      <label class="field">Часов жизни ссылки<input v-model.number="ttl" type="number" min="1" max="168" /></label>
-      <label class="row"><input v-model="includeTranscript" type="checkbox" style="width: auto" /> Приложить транскрипт</label>
-      <button class="btn" type="submit">Открыть результат</button>
-      <p v-if="link">{{ link.url }} · до {{ new Date(link.expires_at).toLocaleString() }}</p>
-      <button v-if="link" class="btn danger" type="button" @click="revoke">Закрыть доступ</button>
-    </form>
+
+    <template v-if="debrief && step === 'summary'">
+      <h1>{{ negotiation?.scenario.title ?? 'Разбор' }}</h1>
+      <p class="muted">Разбор</p>
+      <section class="score-card">
+        <b>{{ score ?? '—' }}</b>
+        <span>Итоговый балл</span>
+      </section>
+      <button v-for="metric in debrief.metrics" :key="metric.key" class="metric" type="button" @click="openMetric(metric.key)">
+        <i :class="metric.zone" />
+        <span>{{ metric.title }}</span>
+        <b>{{ formatMetric(metric) }}</b>
+      </button>
+      <section class="split">
+        <article class="card">
+          <p class="muted">Итог сделки</p>
+          <b>{{ debrief.outcome.type === 'deal' ? 'Сделка' : debrief.outcome.type === 'partial_deal' ? 'Частично' : 'Без сделки' }}</b>
+          <p v-if="debrief.outcome.own_outcome != null">Выгода {{ Math.round(debrief.outcome.own_outcome) }}</p>
+        </article>
+        <article class="card">
+          <p class="muted">Мой рост</p>
+          <b>{{ debrief.guidance[0]?.advice ?? 'Разбор без отдельной точки роста' }}</b>
+        </article>
+      </section>
+      <button class="linkish debrief-link" type="button" @click="step = 'glossary'">Что значит метрики</button>
+      <button class="btn" type="button" @click="sheet = true">Поделиться с руководителем</button>
+      <button class="btn" type="button" @click="again">Новый созвон</button>
+      <button class="btn ghost" type="button" @click="again">Новая попытка</button>
+    </template>
+
+    <template v-else-if="selected && step === 'metric'">
+      <button class="back" type="button" @click="step = 'summary'"><img :src="backIcon" alt="" width="20" height="20" /></button>
+      <h1>{{ selected.title }}</h1>
+      <p class="muted">{{ COPY[selected.key]?.en }}</p>
+      <p class="body">{{ COPY[selected.key]?.text ?? 'Как эта метрика считается в разборе.' }}</p>
+      <section class="card meter">
+        <div class="meter-top"><span>Твой результат</span><b>{{ formatMetric(selected) }}</b></div>
+        <div class="track"><i :style="{ width: `${ratio(selected)}%` }" /></div>
+        <div class="meter-scale"><span>0%</span><span>порог</span><span>100%</span></div>
+      </section>
+      <button class="btn" type="button" @click="step = 'summary'">Все метрики</button>
+    </template>
+
+    <template v-else-if="debrief && step === 'glossary'">
+      <button class="back" type="button" @click="step = 'summary'"><img :src="backIcon" alt="" width="20" height="20" /></button>
+      <h1>Что значит метрики</h1>
+      <article v-for="metric in debrief.metrics" :key="metric.key" class="card glossary">
+        <i :class="metric.zone" />
+        <div>
+          <b>{{ metric.title }}</b>
+          <p class="muted">{{ COPY[metric.key]?.en }}</p>
+          <p>{{ COPY[metric.key]?.text ?? formatMetric(metric) }}</p>
+        </div>
+      </article>
+    </template>
+
+    <template v-else-if="step === 'links'">
+      <button class="back" type="button" @click="sheet = true; step = 'summary'"><img :src="backIcon" alt="" width="20" height="20" /></button>
+      <h1>Мои ссылки</h1>
+      <p v-if="!links.length" class="muted">Ссылок пока нет. Поделись разбором с руководителем.</p>
+      <article v-for="item in links" :key="item.id" class="card link-row">
+        <div>
+          <b>Ссылка на разбор</b>
+          <p class="muted">{{ linkState(item) }} · до {{ new Date(item.expiresAt).toLocaleString() }}</p>
+        </div>
+        <button v-if="!item.revoked && linkState(item) === 'активна'" class="btn slim" type="button" @click="revoke(item)">Отозвать</button>
+      </article>
+    </template>
+
+    <div v-if="sheet" class="sheet-backdrop" @click.self="sheet = false">
+      <section class="sheet">
+        <h2>Поделиться с руководителем</h2>
+        <p class="muted">Увидит итог, рост и транскрипт, если он включён. Ссылка действует 24 часа.</p>
+        <label class="share-toggle">
+          Показать транскрипт
+          <button class="toggle" :class="{ on: includeTranscript }" type="button" @click="includeTranscript = !includeTranscript"><i /></button>
+        </label>
+        <button class="btn" type="button" :disabled="pending" @click="sendTelegram">Отправить в Telegram</button>
+        <button class="btn ghost" type="button" :disabled="pending" @click="copyLink">{{ copied ? 'Ссылка скопирована' : 'Скопировать ссылку' }}</button>
+        <button class="linkish" type="button" @click="sheet = false; step = 'links'">Мои ссылки</button>
+      </section>
+    </div>
   </main>
 </template>

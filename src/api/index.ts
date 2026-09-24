@@ -9,7 +9,7 @@ let unauthorized = () => {}
 
 const api = import.meta.env.VITE_API_MODE === 'http'
   ? createHttpApi()
-  : createMockApi(() => tokenRef.current)
+  : createMockApi(() => tokenRef.current, () => unauthorized())
 
 export function configureApi(getToken: () => string | null, onUnauthorized: () => void) {
   tokenRef.current = getToken()

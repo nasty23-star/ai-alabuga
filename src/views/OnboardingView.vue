@@ -105,7 +105,7 @@ function later() {
     <h1>Расскажи о себе</h1>
     <p class="muted">Подберём сценарии под твою работу</p>
     <form style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px" @submit.prevent="save">
-      <label class="field">Как к тебе обращаться<input v-model="name" placeholder="Анна" /></label>
+      <label class="field">Как к тебе обращаться<input v-model="name" placeholder="Введите имя" /></label>
       <div class="row">
         <button v-for="sphere in spheres" :key="sphere.id" type="button" class="chip" :class="{ on: selected.includes(sphere.id) }" @click="toggle(sphere.id)">{{ sphere.title }}</button>
       </div>
