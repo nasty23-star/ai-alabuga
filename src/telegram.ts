@@ -3,8 +3,8 @@ export function initTelegram() {
   if (!app) return
   app.ready()
   app.expand()
-  app.setHeaderColor('#1f7a4d')
-  app.setBackgroundColor('#f3f6f4')
+  app.setHeaderColor('#c5daf8')
+  app.setBackgroundColor('#f7f8fb')
 }
 
 export function bindBackButton(visible: boolean, onBack: () => void) {
