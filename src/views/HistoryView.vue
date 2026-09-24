@@ -6,6 +6,7 @@ import type { NegotiationListItem } from '@/api/types'
 import BadgeRow from '@/components/BadgeRow.vue'
 import { collectBadges } from '@/gamification/badges'
 import { useGamificationStore } from '@/stores/gamification'
+import { useTelegramButtons } from '@/telegram'
 
 const router = useRouter()
 const gamification = useGamificationStore()
@@ -13,6 +14,8 @@ const items = ref<NegotiationListItem[]>([])
 const cursor = ref<string | null>(null)
 const error = ref('')
 const badges = computed(() => collectBadges(items.value))
+
+useTelegramButtons(() => ({ main: null, back: null }))
 
 async function loadMore() {
   const page = await getApi().listNegotiations(20, cursor.value)

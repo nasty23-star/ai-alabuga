@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ApiError, getApi } from '@/api'
+import { useTelegramButtons } from '@/telegram'
 import type { AgreedTerm, NegotiationState, TurnEvent } from '@/api/types'
 
 const route = useRoute()
@@ -110,6 +111,13 @@ async function leave() {
   await router.push({ name: 'debrief', params: { id: id.value } })
 }
 
+useTelegramButtons(() => ({
+  main: deal.value
+    ? { text: 'Принять', enabled: !pending.value, progress: pending.value, onClick: () => { void accept() } }
+    : { text: 'Ход', enabled: !pending.value && draft.value.trim().length > 0, progress: pending.value, onClick: () => { void send() } },
+  back: () => { void router.push('/scenarios') },
+}))
+
 onMounted(async () => {
   try {
     await load()
@@ -139,14 +147,14 @@ onMounted(async () => {
       <p class="muted">{{ deal.summary }}</p>
       <p v-for="term in deal.terms" :key="term.type_id">{{ term.name }}: {{ term.value }} {{ term.unit }}</p>
       <div class="row">
-        <button class="btn" type="button" style="width: auto; padding: 0 18px" @click="accept">Принять</button>
+        <button class="btn tg-hide" type="button" style="width: auto; padding: 0 18px" @click="accept">Принять</button>
         <button class="btn ghost" type="button" @click="reject">К торгу</button>
       </div>
     </article>
     <p v-if="error" class="error">{{ error }}</p>
     <form class="composer" @submit.prevent="send">
       <input v-model="draft" :maxlength="state?.limits.max_utterance_chars ?? 1200" placeholder="Ваша реплика" />
-      <button class="btn" type="submit" :disabled="pending">Ход</button>
+      <button class="btn tg-hide" type="submit" :disabled="pending">Ход</button>
     </form>
   </main>
 </template>

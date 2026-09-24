@@ -13,8 +13,14 @@ import BadgeRow from '@/components/BadgeRow.vue'
 import { collectBadges } from '@/gamification/badges'
 import { useGamificationStore } from '@/stores/gamification'
 import { useSessionStore } from '@/stores/session'
+import { useTelegramButtons } from '@/telegram'
 
 const router = useRouter()
+
+useTelegramButtons(() => ({
+  main: { text: 'Новые переговоры', onClick: () => { void router.push('/wizard') } },
+  back: null,
+}))
 const session = useSessionStore()
 const gamification = useGamificationStore()
 const data = ref<ScenariosResponse | null>(null)
@@ -54,7 +60,7 @@ onMounted(async () => {
       </span>
       <img :src="chevron" alt="" width="22" height="22" />
     </button>
-    <button class="btn" type="button" @click="router.push('/wizard')">Новые переговоры</button>
+    <button class="btn tg-hide" type="button" @click="router.push('/wizard')">Новые переговоры</button>
     <p v-if="error" class="error">{{ error }}</p>
     <article v-for="theme in data?.themes ?? []" :key="theme.theme" class="card" style="display: flex; flex-direction: column; gap: 8px">
       <b>{{ theme.title }}</b>

@@ -261,6 +261,7 @@ h2 { font-size: 18px; font-weight: 700; }
   transition: transform 0.15s ease;
 }
 .toggle.on i { transform: translateX(20px); }
+/* .tg-app .tg-hide { display: none; } */
 
 .debrief { position: relative; }
 .score-card {

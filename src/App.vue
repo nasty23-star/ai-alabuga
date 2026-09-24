@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import navBell from '@/assets/onboarding/nav-bell.svg'
 import navChart from '@/assets/onboarding/nav-chart.svg'
 import navFile from '@/assets/onboarding/nav-file.svg'
@@ -8,29 +8,24 @@ import navHome from '@/assets/onboarding/nav-home.svg'
 import SplashScreen from '@/components/SplashScreen.vue'
 import { useGamificationStore } from '@/stores/gamification'
 import { useSessionStore } from '@/stores/session'
-import { bindBackButton } from '@/telegram'
+import { setBackButton, setMainButton } from '@/telegram'
 
 const SPLASH_MS = 900
 
 const route = useRoute()
-const router = useRouter()
 const session = useSessionStore()
 const gamification = useGamificationStore()
 const booting = ref(true)
 const bare = computed(() => Boolean(route.meta.bare))
 const showNav = computed(() => !booting.value && session.isAuthenticated && session.onboarded && !bare.value && route.name !== 'chat' && route.name !== 'wizard')
 
-function goBack() {
-  if (route.name === 'debrief' || route.name === 'chat') {
-    void router.push('/scenarios')
-    return
-  }
-  if (window.history.length > 1) router.back()
-  else void router.push('/scenarios')
-}
+watch(booting, (value) => {
+  if (!value) return
+  setMainButton(null)
+  setBackButton(null)
+})
 
 watch(() => route.fullPath, () => {
-  bindBackButton(route.name !== 'scenarios' && route.name !== 'auth' && route.name !== 'welcome', goBack)
   gamification.hydrate()
 }, { immediate: true })
 

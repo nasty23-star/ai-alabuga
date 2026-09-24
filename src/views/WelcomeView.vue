@@ -4,12 +4,15 @@ import flag from '@/assets/onboarding/flag.svg'
 import flagPole from '@/assets/onboarding/flag-pole.svg'
 import peaks from '@/assets/onboarding/peaks.svg'
 import snow from '@/assets/onboarding/snow.svg'
+import { useTelegramButtons } from '@/telegram'
 
 const router = useRouter()
 
 function practice() {
   void router.push('/history')
 }
+
+useTelegramButtons(() => ({ main: { text: 'Тренироваться', onClick: practice }, back: null }))
 </script>
 
 <template>
@@ -22,7 +25,7 @@ function practice() {
       <img class="welcome-flag" :src="flag" alt="" />
     </div>
     <div class="welcome-action">
-      <button class="btn" type="button" @click="practice">Тренироваться</button>
+      <button class="btn tg-hide" type="button" @click="practice">Тренироваться</button>
     </div>
   </main>
 </template>

@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ApiError, getApi } from '@/api'
+import { useTelegramButtons } from '@/telegram'
 import type { CounterpartProfile, IssueDraft, IssueType, Persona, ScenarioCard, Weight } from '@/api/types'
 
 const route = useRoute()
@@ -98,6 +99,21 @@ async function saveProfile() {
   profile.sample_phrases = phrasesText.value.split('\n').map((item) => item.trim()).filter(Boolean)
   await getApi().putCounterpart({ ...profile })
 }
+
+function back() {
+  if (step.value > 0) step.value -= 1
+  else void router.push('/scenarios')
+}
+
+useTelegramButtons(() => ({
+  main: {
+    text: step.value < 3 ? 'Далее' : 'Начать',
+    enabled: !pending.value,
+    progress: pending.value,
+    onClick: () => { if (step.value < 3) step.value += 1; else void start() },
+  },
+  back,
+}))
 
 async function start() {
   error.value = ''
@@ -205,8 +221,8 @@ async function start() {
 
     <div class="row">
       <button v-if="step > 0" class="btn ghost" type="button" @click="step -= 1">Назад</button>
-      <button v-if="step < 3" class="btn" type="button" @click="step += 1">Далее</button>
-      <button v-else class="btn" type="button" :disabled="pending" @click="start">Начать</button>
+      <button v-if="step < 3" class="btn tg-hide" type="button" @click="step += 1">Далее</button>
+      <button v-else class="btn tg-hide" type="button" :disabled="pending" @click="start">Начать</button>
     </div>
   </main>
 </template>

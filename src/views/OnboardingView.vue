@@ -13,6 +13,7 @@ import { ApiError } from '@/api'
 import type { SphereId } from '@/api/types'
 import { useGamificationStore } from '@/stores/gamification'
 import { useSessionStore } from '@/stores/session'
+import { useTelegramButtons } from '@/telegram'
 
 const spheres: { id: SphereId; title: string }[] = [
   { id: 'procurement', title: 'Закупки' },
@@ -58,6 +59,21 @@ function later() {
   session.skipOnboarding()
   void router.push('/scenarios')
 }
+
+function back() {
+  if (slide.value === 99) slide.value = slides[slides.length - 1]
+  else if (slide.value > 0) slide.value -= 1
+}
+
+useTelegramButtons(() => ({
+  main: {
+    text: 'Далее',
+    enabled: !pending.value,
+    progress: pending.value,
+    onClick: () => { if (slide.value === 99) void save(); else next() },
+  },
+  back: slide.value > 0 ? back : null,
+}))
 </script>
 
 <template>
@@ -80,7 +96,7 @@ function later() {
     <h1 style="text-align: center; max-width: 252px; margin: 0 auto">Практикуй переговоры с ИИ</h1>
     <p class="body" style="text-align: center">Готовые характеры или копия реального человека — клиента, начальника, подрядчика.</p>
     <button class="btn ghost" type="button" @click="later">Пропустить</button>
-    <button class="btn" type="button" @click="next">Далее</button>
+    <button class="btn tg-hide" type="button" @click="next">Далее</button>
   </main>
 
   <main v-else-if="slide === 1" class="screen bare">
@@ -98,7 +114,7 @@ function later() {
     <h1 style="text-align: center">Поднимайся выше</h1>
     <p class="body" style="text-align: center">Каждая сделка — шаг к вершине. Разбор покажет, где ты вырос и что попробовать дальше.</p>
     <button class="btn ghost" type="button" @click="later">Пропустить</button>
-    <button class="btn" type="button" @click="next">Далее</button>
+    <button class="btn tg-hide" type="button" @click="next">Далее</button>
   </main>
 
   <main v-else class="screen bare" style="padding-top: 64px">
@@ -111,7 +127,7 @@ function later() {
       </div>
       <p v-if="error" class="error">{{ error }}</p>
       <button class="btn ghost" type="button" @click="later">Пропустить</button>
-      <button class="btn" type="submit" :disabled="pending">Далее</button>
+      <button class="btn tg-hide" type="submit" :disabled="pending">Далее</button>
     </form>
   </main>
 </template>

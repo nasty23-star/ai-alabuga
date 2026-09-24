@@ -5,6 +5,7 @@ import { ApiError, getApi } from '@/api'
 import type { SphereId } from '@/api/types'
 import { useGamificationStore } from '@/stores/gamification'
 import { useSessionStore } from '@/stores/session'
+import { useTelegramButtons } from '@/telegram'
 
 const spheres: { id: SphereId; title: string }[] = [
   { id: 'procurement', title: 'Закупки' },
@@ -25,6 +26,11 @@ const error = ref('')
 const message = ref('')
 
 onMounted(() => gamification.hydrate())
+
+useTelegramButtons(() => ({
+  main: { text: 'Сохранить', onClick: () => { void save() } },
+  back: null,
+}))
 
 function toggle(id: SphereId) {
   selected.value = selected.value.includes(id) ? selected.value.filter((item) => item !== id) : [...selected.value, id]
@@ -70,7 +76,7 @@ function onToggle() {
       <div class="row" style="flex-wrap: wrap">
         <button v-for="sphere in spheres" :key="sphere.id" type="button" class="chip" :class="{ on: selected.includes(sphere.id) }" @click="toggle(sphere.id)">{{ sphere.title }}</button>
       </div>
-      <button class="btn" type="submit">Сохранить</button>
+      <button class="btn tg-hide" type="submit">Сохранить</button>
     </form>
     <section v-if="gamification.allowed" class="card row" style="justify-content: space-between">
       <div>

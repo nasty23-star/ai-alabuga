@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import backIcon from '@/assets/onboarding/back.svg'
 import { ApiError, getApi } from '@/api'
+import { useTelegramButtons } from '@/telegram'
 import type { Debrief, Metric, NegotiationState } from '@/api/types'
 
 interface ShareItem {
@@ -152,6 +153,20 @@ function again() {
   const scenarioId = negotiation.value?.scenario.id
   void router.push(scenarioId ? `/wizard/${scenarioId}` : '/wizard')
 }
+
+useTelegramButtons(() => {
+  if (sheet.value) {
+    return {
+      main: { text: 'Отправить в Telegram', enabled: !pending.value, progress: pending.value, onClick: () => { void sendTelegram() } },
+      back: () => { sheet.value = false },
+    }
+  }
+  if (step.value === 'metric' || step.value === 'glossary') {
+    return { main: { text: 'Все метрики', onClick: () => { step.value = 'summary' } }, back: () => { step.value = 'summary' } }
+  }
+  if (step.value === 'links') return { main: null, back: () => { step.value = 'summary' } }
+  return { main: { text: 'Новый созвон', onClick: again }, back: () => { void router.push('/scenarios') } }
+})
 </script>
 
 <template>
@@ -183,7 +198,7 @@ function again() {
       </section>
       <button class="linkish debrief-link" type="button" @click="step = 'glossary'">Что значит метрики</button>
       <button class="btn" type="button" @click="sheet = true">Поделиться с руководителем</button>
-      <button class="btn" type="button" @click="again">Новый созвон</button>
+      <button class="btn tg-hide" type="button" @click="again">Новый созвон</button>
       <button class="btn ghost" type="button" @click="again">Новая попытка</button>
     </template>
 
@@ -197,7 +212,7 @@ function again() {
         <div class="track"><i :style="{ width: `${ratio(selected)}%` }" /></div>
         <div class="meter-scale"><span>0%</span><span>порог</span><span>100%</span></div>
       </section>
-      <button class="btn" type="button" @click="step = 'summary'">Все метрики</button>
+      <button class="btn tg-hide" type="button" @click="step = 'summary'">Все метрики</button>
     </template>
 
     <template v-else-if="debrief && step === 'glossary'">
@@ -234,7 +249,7 @@ function again() {
           Показать транскрипт
           <button class="toggle" :class="{ on: includeTranscript }" type="button" @click="includeTranscript = !includeTranscript"><i /></button>
         </label>
-        <button class="btn" type="button" :disabled="pending" @click="sendTelegram">Отправить в Telegram</button>
+        <button class="btn tg-hide" type="button" :disabled="pending" @click="sendTelegram">Отправить в Telegram</button>
         <button class="btn ghost" type="button" :disabled="pending" @click="copyLink">{{ copied ? 'Ссылка скопирована' : 'Скопировать ссылку' }}</button>
         <button class="linkish" type="button" @click="sheet = false; step = 'links'">Мои ссылки</button>
       </section>

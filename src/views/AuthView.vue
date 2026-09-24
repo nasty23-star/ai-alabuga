@@ -7,6 +7,7 @@ import peaks from '@/assets/onboarding/peaks.svg'
 import snow from '@/assets/onboarding/snow.svg'
 import { ApiError } from '@/api'
 import { useSessionStore } from '@/stores/session'
+import { useTelegramButtons } from '@/telegram'
 
 const session = useSessionStore()
 const router = useRouter()
@@ -18,6 +19,17 @@ const password = ref('')
 const error = ref('')
 const pending = ref(false)
 const nextPath = computed(() => (typeof route.query.next === 'string' ? route.query.next : session.returnPath))
+
+function submitAuth() {
+  void run(() => mode.value === 'in' ? session.signIn(login.value, password.value) : session.signUp(login.value, password.value))
+}
+
+useTelegramButtons(() => step.value === 'hero'
+  ? { main: { text: 'Начать восхождение', onClick: () => { step.value = 'form' } }, back: null }
+  : {
+      main: { text: 'Далее', enabled: !pending.value, progress: pending.value, onClick: submitAuth },
+      back: () => { step.value = 'hero' },
+    })
 
 async function run(action: () => Promise<void>) {
   error.value = ''
@@ -44,9 +56,7 @@ async function run(action: () => Promise<void>) {
       <img :src="snow" alt="" style="position: absolute; left: 20px; bottom: 0; width: 520px; max-width: none" />
       <img :src="flagPole" alt="" style="position: absolute; left: 180px; bottom: 150px; height: 35px" />
       <img :src="flag" alt="" style="position: absolute; left: 178px; bottom: 176px; width: 28px" />
-    </div>
-    <div style="background: #1c2a60; padding: 8px 16px 18px">
-      <button class="btn" type="button" @click="step = 'form'">Начать восхождение</button>
+      <button class="btn tg-hide" style="position: absolute; bottom: 32px;" type="button" @click="step = 'form'">Начать восхождение</button>
     </div>
   </main>
 
@@ -63,7 +73,7 @@ async function run(action: () => Promise<void>) {
           <button class="linkish" type="button" @click="mode = mode === 'up' ? 'in' : 'up'">{{ mode === 'up' ? 'Войти' : 'Регистрация' }}</button>
         </p>
         <button class="btn ghost" type="button" :disabled="pending" @click="run(() => session.guest())">Пропустить</button>
-        <button class="btn" type="submit" :disabled="pending">Далее</button>
+        <button class="btn tg-hide" type="submit" :disabled="pending">Далее</button>
       </form>
     </div>
   </main>
