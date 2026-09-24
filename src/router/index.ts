@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import { useSessionStore } from '@/stores/session'
 import AuthView from '@/views/AuthView.vue'
 import ChatView from '@/views/ChatView.vue'
@@ -11,7 +11,7 @@ import SharedView from '@/views/SharedView.vue'
 import WizardView from '@/views/WizardView.vue'
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),
   routes: [
     { path: '/auth', name: 'auth', component: AuthView, meta: { public: true, bare: true } },
     { path: '/onboarding', name: 'onboarding', component: OnboardingView, meta: { bare: true } },
