@@ -88,7 +88,7 @@ useTelegramButtons(() => ({
         <span><b style="font-size: 13px">Занятой CEO</b><span class="muted" style="display: block">цифры и итог</span></span>
       </article>
       <article class="card" style="position: absolute; top: 264px; left: 28px; width: 250px; background: #1a5cff; color: #fff; display: flex; gap: 12px; align-items: center">
-        <span style="width: 44px; height: 44px; border-radius: 50%; background: #d9f99d; color: #1a5cff; display: grid; place-items: center; font-weight: 700">+</span>
+        <span style="width: 44px; height: 44px; border-radius: 50%; background: #fff; color: #1a5cff; display: grid; place-items: center; font-weight: 700">+</span>
         <span><b style="font-size: 13px">Твой собеседник</b><span style="display: block; font-size: 12px; opacity: 0.7">по реальному человеку</span></span>
       </article>
     </section>

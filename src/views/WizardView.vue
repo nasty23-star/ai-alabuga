@@ -186,7 +186,7 @@ async function start() {
         :key="persona.id"
         type="button"
         class="card"
-        :style="personaId === persona.id ? 'outline: 2px solid var(--green)' : ''"
+        :style="personaId === persona.id ? 'outline: 2px solid var(--blue)' : ''"
         @click="personaId = persona.id"
       >
         <b>{{ persona.name }}</b>

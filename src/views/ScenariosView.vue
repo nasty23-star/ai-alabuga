@@ -55,7 +55,7 @@ onMounted(async () => {
     <BadgeRow v-if="gamification.active" :badges="badges" />
     <button class="card row" type="button" style="justify-content: space-between" @click="router.push('/wizard')">
       <span class="row">
-        <span style="width: 48px; height: 48px; border-radius: 16px; background: #d9f99d; display: grid; place-items: center"><img :src="spark" alt="" width="20" height="20" /></span>
+        <span style="width: 48px; height: 48px; border-radius: 16px; background: #d6e6ff; display: grid; place-items: center"><img :src="spark" alt="" width="20" height="20" /></span>
         <span><b>Свой собеседник</b><span class="muted" style="display: block">Копия реального человека</span></span>
       </span>
       <img :src="chevron" alt="" width="22" height="22" />

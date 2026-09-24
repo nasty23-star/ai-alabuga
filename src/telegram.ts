@@ -26,7 +26,8 @@ export function initTelegram() {
   app.ready()
   app.expand()
   app.setHeaderColor('#c5daf8')
-  app.setBackgroundColor('#f7f8fb')
+  app.setBackgroundColor('#f5f7fb')
+  app.setBottomBarColor?.('#ffffff')
   app.MainButton.setParams({ color: '#1a5cff', text_color: '#ffffff' })
 }
 
