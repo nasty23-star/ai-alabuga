@@ -20,6 +20,7 @@ export interface Account {
 export interface AuthResponse {
   token: string
   account: Account
+  returning?: boolean
 }
 
 export interface IssueType {

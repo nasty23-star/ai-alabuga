@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { ApiError, configureApi, getApi, syncToken } from '@/api'
 import type { Account, SphereId } from '@/api/types'
+import { telegramDisplayName, type TelegramProfile } from '@/telegram'
 
 const TOKEN_KEY = 'arena-token'
 const LOGIN_KEY = 'arena-login'
@@ -51,6 +52,23 @@ export const useSessionStore = defineStore('session', () => {
     onboarded.value = false
     greetOnEntry.value = false
     persist()
+  }
+
+  function telegramLogin(profile: TelegramProfile) {
+    return `tg:${profile.id}`
+  }
+
+  async function signInTelegram(profile: TelegramProfile) {
+    const result = await getApi().signInTelegram({
+      init_data: window.Telegram?.WebApp?.initData ?? '',
+      id: profile.id,
+      first_name: profile.firstName,
+      last_name: profile.lastName,
+      username: profile.username,
+    })
+    if (!result.account.display_name) result.account.display_name = telegramDisplayName(profile)
+    applyAuth(result.token, result.account, telegramLogin(profile))
+    greetOnEntry.value = result.returning === true
   }
 
   async function signIn(name: string, password: string) {
@@ -120,6 +138,7 @@ export const useSessionStore = defineStore('session', () => {
     returnPath,
     greetOnEntry,
     isAuthenticated,
+    signInTelegram,
     signIn,
     signUp,
     guest,

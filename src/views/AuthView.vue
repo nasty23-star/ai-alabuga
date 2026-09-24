@@ -7,7 +7,7 @@ import peaks from '@/assets/onboarding/peaks.svg'
 import snow from '@/assets/onboarding/snow.svg'
 import { ApiError } from '@/api'
 import { useSessionStore } from '@/stores/session'
-import { useTelegramButtons } from '@/telegram'
+import { readTelegramProfile, useTelegramButtons } from '@/telegram'
 
 const session = useSessionStore()
 const router = useRouter()
@@ -19,12 +19,15 @@ const password = ref('')
 const error = ref('')
 const pending = ref(false)
 const nextPath = computed(() => (typeof route.query.next === 'string' ? route.query.next : session.returnPath))
+const fromTelegram = Boolean(readTelegramProfile())
 
 function submitAuth() {
   void run(() => mode.value === 'in' ? session.signIn(login.value, password.value) : session.signUp(login.value, password.value))
 }
 
-useTelegramButtons(() => step.value === 'hero'
+useTelegramButtons(() => fromTelegram
+  ? { main: null, back: null }
+  : step.value === 'hero'
   ? { main: { text: 'Начать восхождение', onClick: () => { step.value = 'form' } }, back: null }
   : {
       main: { text: 'Далее', enabled: !pending.value, progress: pending.value, onClick: submitAuth },
@@ -51,7 +54,9 @@ async function run(action: () => Promise<void>) {
 </script>
 
 <template>
-  <main v-if="step === 'hero'" class="screen bare auth-hero hero-sky">
+  <main v-if="fromTelegram" class="screen bare" />
+
+  <main v-else-if="step === 'hero'" class="screen bare auth-hero hero-sky">
     <div class="auth-copy">
       <h1>В переговорах тоже берут высоту</h1>
       <p class="body">Тренируйся с ИИ-собеседниками<br>и поднимайся выше с каждой сделкой</p>
@@ -60,7 +65,7 @@ async function run(action: () => Promise<void>) {
     <img class="auth-snow" :src="snow" alt="" />
     <img class="auth-pole" :src="flagPole" alt="" />
     <img class="auth-flag" :src="flag" alt="" />
-    <button class="btn tg-hide auth-cta" type="button" @click="step = 'form'">Начать восхождение</button>
+    <!-- <button class="btn tg-hide auth-cta" type="button" @click="step = 'form'">Начать восхождение</button> -->
   </main>
 
   <main v-else class="screen bare auth-form">

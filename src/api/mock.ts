@@ -147,6 +147,7 @@ const STOCK: Persona[] = [
 interface UserRow {
   login: string
   password: string
+  telegramId?: number
   account: Account
 }
 
@@ -378,6 +379,27 @@ export function createMockApi(getToken: () => string | null, expired: () => void
       db.tokens[token] = account.id
       save(db)
       return { token, account }
+    },
+    async signInTelegram(body) {
+      const db = load()
+      const display = [body.first_name, body.last_name].filter(Boolean).join(' ') || body.username || 'Участник'
+      let user = db.users.find((item) => item.telegramId === body.id)
+      const returning = Boolean(user)
+      if (!user) {
+        user = {
+          login: body.username ? `@${body.username}` : `tg:${body.id}`,
+          password: '',
+          telegramId: body.id,
+          account: { id: crypto.randomUUID(), display_name: display, is_guest: false, spheres: [] },
+        }
+        db.users.push(user)
+      } else if (!user.account.display_name) {
+        user.account.display_name = display
+      }
+      const token = crypto.randomUUID()
+      db.tokens[token] = user.account.id
+      save(db)
+      return { token, account: user.account, returning }
     },
     async signIn(login, password) {
       const db = load()

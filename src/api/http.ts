@@ -22,6 +22,7 @@ import type {
 export interface Api {
   signUp(login: string, password: string): Promise<AuthResponse>
   signIn(login: string, password: string): Promise<AuthResponse>
+  signInTelegram(body: { init_data: string; id: number; first_name: string; last_name: string; username: string }): Promise<AuthResponse>
   guest(): Promise<AuthResponse>
   upgrade(login: string, password: string): Promise<AuthResponse>
   signOut(): Promise<void>
@@ -91,6 +92,7 @@ export function createHttpApi(): Api {
   return {
     signUp: (login, password) => request('/api/auth/sign-up', { method: 'POST', body: JSON.stringify({ login, password }) }),
     signIn: (login, password) => request('/api/auth/sign-in', { method: 'POST', body: JSON.stringify({ login, password }) }),
+    signInTelegram: (body) => request('/api/auth/telegram', { method: 'POST', body: JSON.stringify(body) }),
     guest: () => request('/api/auth/guest', { method: 'POST' }, crypto.randomUUID()),
     upgrade: (login, password) => request('/api/auth/upgrade', { method: 'POST', body: JSON.stringify({ login, password }) }),
     signOut: () => request('/api/auth/sign-out', { method: 'POST' }),

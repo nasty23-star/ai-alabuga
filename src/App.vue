@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import navBell from '@/assets/onboarding/nav-bell.svg'
 import navChart from '@/assets/onboarding/nav-chart.svg'
 import navFile from '@/assets/onboarding/nav-file.svg'
@@ -8,11 +8,12 @@ import navHome from '@/assets/onboarding/nav-home.svg'
 import SplashScreen from '@/components/SplashScreen.vue'
 import { useGamificationStore } from '@/stores/gamification'
 import { useSessionStore } from '@/stores/session'
-import { setBackButton, setMainButton } from '@/telegram'
+import { readTelegramProfile, setBackButton, setMainButton } from '@/telegram'
 
 const SPLASH_MS = 900
 
 const route = useRoute()
+const router = useRouter()
 const session = useSessionStore()
 const gamification = useGamificationStore()
 const booting = ref(true)
@@ -32,7 +33,15 @@ watch(() => route.fullPath, () => {
 onMounted(async () => {
   gamification.hydrate()
   const started = Date.now()
-  if (session.isAuthenticated) {
+  const profile = readTelegramProfile()
+  if (profile && session.login !== `tg:${profile.id}`) {
+    try {
+      await session.signInTelegram(profile)
+      await router.replace(session.greetOnEntry && session.onboarded ? { name: 'welcome' } : (session.onboarded ? '/scenarios' : '/onboarding'))
+    } catch {
+      // Без данных Telegram остаётся обычный вход.
+    }
+  } else if (session.isAuthenticated) {
     try {
       await session.refresh()
     } catch {

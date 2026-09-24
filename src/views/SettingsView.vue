@@ -70,7 +70,7 @@ function onToggle() {
 <template>
   <main class="screen">
     <h1>Профиль</h1>
-    <p class="muted">{{ session.account?.is_guest ? 'Гостевой аккаунт' : session.login }}</p>
+    <p class="muted">{{ session.account?.is_guest ? 'Гостевой аккаунт' : (session.login.startsWith('tg:') ? (session.account?.display_name || 'Telegram') : session.login) }}</p>
     <form class="stack card" @submit.prevent="save">
       <label class="field">Имя<input v-model="name" /></label>
       <div class="row" style="flex-wrap: wrap">

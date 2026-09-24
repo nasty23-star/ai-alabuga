@@ -11,8 +11,30 @@ let generation = 0
 let mainClick: (() => void) | null = null
 let backClick: (() => void) | null = null
 
+export interface TelegramProfile {
+  id: number
+  firstName: string
+  lastName: string
+  username: string
+}
+
 export function inTelegram() {
   return Boolean(window.Telegram?.WebApp)
+}
+
+export function readTelegramProfile(): TelegramProfile | null {
+  const user = window.Telegram?.WebApp?.initDataUnsafe?.user
+  if (!user?.id) return null
+  return {
+    id: user.id,
+    firstName: user.first_name ?? '',
+    lastName: user.last_name ?? '',
+    username: user.username ?? '',
+  }
+}
+
+export function telegramDisplayName(profile: TelegramProfile) {
+  return [profile.firstName, profile.lastName].filter(Boolean).join(' ') || profile.username || 'Участник'
 }
 
 export function closeMiniApp() {

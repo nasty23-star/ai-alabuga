@@ -25,6 +25,13 @@ interface TelegramMainButton extends TelegramButton {
   setParams: (params: { color?: string; text_color?: string; is_active?: boolean; is_visible?: boolean }) => void
 }
 
+interface TelegramWebAppUser {
+  id: number
+  first_name: string
+  last_name?: string
+  username?: string
+}
+
 interface TelegramWebApp {
   ready: () => void
   expand: () => void
@@ -37,6 +44,7 @@ interface TelegramWebApp {
   openTelegramLink?: (url: string) => void
   themeParams: Record<string, string | undefined>
   initData: string
+  initDataUnsafe: { user?: TelegramWebAppUser }
 }
 
 interface Window {
