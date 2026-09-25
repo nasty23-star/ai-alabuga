@@ -7,7 +7,7 @@ import chevron from '@/assets/onboarding/chevron.svg'
 import chevronLight from '@/assets/onboarding/chevron-light.svg'
 import flame from '@/assets/onboarding/flame.svg'
 import mic from '@/assets/onboarding/mic.svg'
-import wordmark from '@/assets/onboarding/wordmark.svg'
+import logo from '@/assets/onboarding/logo.svg'
 import { ApiError, getApi } from '@/api'
 import type { NegotiationListItem } from '@/api/types'
 import BadgeRow from '@/components/BadgeRow.vue'
@@ -59,7 +59,7 @@ async function openReview() {
 <template>
   <main class="screen" style="background: linear-gradient(180deg, #d4e2fd 0%, #ecf1fc 31%, #f5f7fc 62%)">
     <header class="row" style="justify-content: space-between">
-      <img :src="wordmark" alt="Вершина" height="22" />
+      <img :src="logo" alt="Вершина" height="22" />
     </header>
     <h1 style="font-size: 26px; letter-spacing: -0.78px">Привет, {{ session.account?.display_name || 'Мистер X' }}!</h1>
     <p class="body">Начнём первое восхождение</p>
@@ -79,7 +79,7 @@ async function openReview() {
       </span>
       <span class="pick-copy">
         <b>Свой собеседник</b>
-        <span class="muted">Копия реального человека из Cognis или вручную</span>
+        <span class="muted">Копия реального человека из Cognico или вручную</span>
       </span>
       <img :src="chevron" alt="" width="20" height="22" />
     </button>

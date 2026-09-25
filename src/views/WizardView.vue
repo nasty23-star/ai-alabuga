@@ -165,9 +165,13 @@ async function saveProfile() {
   }
 }
 
+function closeWizard() {
+  void router.push('/scenarios/pick')
+}
+
 function back() {
   if (step.value > 0) step.value -= 1
-  else void router.push(route.query.persona === 'custom' ? '/scenarios' : '/scenarios/pick')
+  else closeWizard()
 }
 
 function letters(name: string) {
@@ -438,7 +442,16 @@ async function start() {
   </main>
 
   <main v-else class="screen">
-    <p class="muted">Шаг {{ step + 1 }} из {{ titles.length }} · {{ titles[step] }}</p>
+    <header class="pick-head">
+      <button class="back" type="button" @click="back"><img :src="backIcon" alt="" width="20" height="20" /></button>
+      <b>Шаг {{ step + 1 }} из {{ titles.length }}</b>
+      <button class="back" type="button" aria-label="Закрыть" @click="closeWizard">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+    </header>
+    <div class="step-bar" role="progressbar" :aria-valuenow="step + 1" aria-valuemin="1" :aria-valuemax="titles.length" :aria-label="`Шаг ${step + 1} из ${titles.length}`">
+      <span :style="{ width: `${((step + 1) / titles.length) * 100}%` }" />
+    </div>
     <h1>{{ card?.theme_title }}</h1>
     <p v-if="card" class="muted">{{ card.seat }}. {{ card.context }}</p>
     <p v-if="error" class="error">{{ error }}</p>

@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import flag from '@/assets/onboarding/flag.svg'
-import flagPole from '@/assets/onboarding/flag-pole.svg'
 import peaks from '@/assets/onboarding/peaks.svg'
-import snow from '@/assets/onboarding/snow.svg'
 import { ApiError } from '@/api'
 import { useSessionStore } from '@/stores/session'
 import { readTelegramProfile, useTelegramButtons } from '@/telegram'
@@ -62,9 +59,6 @@ async function run(action: () => Promise<void>) {
       <p class="body">Тренируйся с ИИ-собеседниками<br>и поднимайся выше с каждой сделкой</p>
     </div>
     <img class="auth-peaks" :src="peaks" alt="" />
-    <img class="auth-snow" :src="snow" alt="" />
-    <img class="auth-pole" :src="flagPole" alt="" />
-    <img class="auth-flag" :src="flag" alt="" />
     <button class="btn tg-hide auth-cta" type="button" @click="step = 'form'">Начать восхождение</button>
   </main>
 
@@ -79,7 +73,7 @@ async function run(action: () => Promise<void>) {
         {{ mode === 'up' ? 'Уже есть аккаунт?' : 'Нет аккаунта?' }}
         <button class="linkish" type="button" @click="mode = mode === 'up' ? 'in' : 'up'">{{ mode === 'up' ? 'Войти' : 'Регистрация' }}</button>
       </p>
-      <div class="auth-actions">
+      <div class="btn-actions">
         <button class="btn ghost" type="button" :disabled="pending" @click="run(() => session.guest())">Пропустить</button>
         <button class="btn tg-hide" type="submit" :disabled="pending">Далее</button>
       </div>

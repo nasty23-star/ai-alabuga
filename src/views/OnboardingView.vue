@@ -2,13 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import backIcon from '@/assets/onboarding/back.svg'
-import climbDotA from '@/assets/onboarding/climb-dot-a.svg'
-import climbDotB from '@/assets/onboarding/climb-dot-b.svg'
-import climbDotC from '@/assets/onboarding/climb-dot-c.svg'
-import climbHills from '@/assets/onboarding/climb-hills.svg'
-import climbRoute from '@/assets/onboarding/climb-route.svg'
-import flag from '@/assets/onboarding/flag.svg'
-import flagPole from '@/assets/onboarding/flag-pole.svg'
+import climbSky from '@/assets/onboarding/climb-sky.svg'
 import { ApiError } from '@/api'
 import type { SphereId } from '@/api/types'
 import { useSessionStore } from '@/stores/session'
@@ -76,16 +70,18 @@ useTelegramButtons(() => ({
 
 <template>
   <main v-if="slide === 0" class="screen bare">
-    <section class="sky" style="height: 388px; border-radius: 37px; position: relative; overflow: hidden">
-      <article class="card" style="position: absolute; top: 96px; left: 28px; width: 250px; display: flex; gap: 12px; align-items: center">
+    <button class="back" style="visibility: hidden;" type="button" @click="back"><img :src="backIcon" alt="" width="20" height="20" /></button>
+
+    <section class="sky" style="height: 380px; border-radius: 37px; position: relative; overflow: hidden">
+      <article class="card" style="position: absolute; top: 76px; left: 28px; width: 250px; display: flex; gap: 12px; align-items: center">
         <span style="width: 50px; height: 50px; border-radius: 50%; background: #8fb0e8" />
         <span><b style="font-size: 13px">Токсичная CPO</b><span class="muted" style="display: block">давит и перебивает</span></span>
       </article>
-      <article class="card" style="position: absolute; top: 180px; left: 58px; width: 240px; display: flex; gap: 12px; align-items: center">
+      <article class="card" style="position: absolute; top: 170px; left: 58px; width: 240px; display: flex; gap: 12px; align-items: center">
         <span style="width: 50px; height: 50px; border-radius: 50%; background: #5d7eb8" />
         <span><b style="font-size: 13px">Занятой CEO</b><span class="muted" style="display: block">цифры и итог</span></span>
       </article>
-      <article class="card" style="position: absolute; top: 264px; left: 28px; width: 250px; background: #1a5cff; color: #fff; display: flex; gap: 12px; align-items: center">
+      <article class="card" style="position: absolute; top: 256px; left: 28px; width: 250px; background: #1a5cff; color: #fff; display: flex; gap: 12px; align-items: center">
         <span style="width: 44px; height: 44px; border-radius: 50%; background: #fff; color: #1a5cff; display: grid; place-items: center; font-weight: 700">+</span>
         <span><b style="font-size: 13px">Твой собеседник</b><span style="display: block; font-size: 12px; opacity: 0.7">по реальному человеку</span></span>
       </article>
@@ -93,39 +89,40 @@ useTelegramButtons(() => ({
     <div class="dots"><i class="on" /><i /></div>
     <h1 style="text-align: center; max-width: 252px; margin: 0 auto">Практикуй переговоры с ИИ</h1>
     <p class="body" style="text-align: center">Готовые характеры или копия реального человека — клиента, начальника, подрядчика.</p>
-    <button class="btn ghost" type="button" @click="later">Пропустить</button>
-    <button class="btn tg-hide" type="button" @click="next">Далее</button>
+    <div class="btn-actions">
+      <button class="btn ghost" type="button" @click="later">Пропустить</button>
+      <button class="btn tg-hide" type="button" @click="next">Далее</button>
+    </div>
   </main>
 
   <main v-else-if="slide === 1" class="screen bare">
     <button class="back" type="button" @click="back"><img :src="backIcon" alt="" width="20" height="20" /></button>
     <section class="sky climb-sky">
-      <img class="climb-hills" :src="climbHills" alt="" />
-      <img class="climb-route" :src="climbRoute" alt="" />
-      <img class="climb-pole" :src="flagPole" alt="" />
-      <img class="climb-flag" :src="flag" alt="" />
-      <span class="climb-mark is-top"><img :src="climbDotC" alt="" width="28" height="28" /><span>Камнегрыз</span></span>
-      <span class="climb-mark is-mid"><img :src="climbDotB" alt="" width="20" height="20" /><span>Верхолаз</span></span>
-      <span class="climb-mark is-low"><img :src="climbDotA" alt="" width="14" height="14" /><span>Скалолаз</span></span>
+      <img class="climb-sky-bg" style="width: 100%; height: 100%; object-fit: cover;" :src="climbSky" alt="" />
     </section>
     <div class="dots"><i /><i class="on" /></div>
     <h1 style="text-align: center">Поднимайся выше</h1>
     <p class="body" style="text-align: center">Каждая сделка — шаг к вершине. Разбор покажет, где ты вырос и что попробовать дальше.</p>
-    <button class="btn ghost" type="button" @click="later">Пропустить</button>
-    <button class="btn tg-hide" type="button" @click="next">Далее</button>
+    <div class="btn-actions">
+      <button class="btn ghost" type="button" @click="later">Пропустить</button>
+      <button class="btn tg-hide" type="button" @click="next">Далее</button>
+    </div>
   </main>
 
-  <main v-else class="screen bare" style="padding-top: 64px">
+  <main v-else class="screen bare">
+    <button class="back" type="button" @click="back"><img :src="backIcon" alt="" width="20" height="20" /></button>
+    <form style="display: flex; flex-direction: column; gap: 6px; height: 100%; margin-top: 16px" @submit.prevent="save">
     <h1>Расскажи о себе</h1>
     <p class="muted">Подберём сценарии под твою работу</p>
-    <form style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px" @submit.prevent="save">
-      <label class="field">Как к тебе обращаться<input v-model="name" placeholder="Введите имя" /></label>
+      <label class="field" style="margin-top: 24px;">Как к тебе обращаться<input v-model="name" placeholder="Введите имя" /></label>
       <!-- <div class="row">
         <button v-for="sphere in spheres" :key="sphere.id" type="button" class="chip" :class="{ on: selected.includes(sphere.id) }" @click="toggle(sphere.id)">{{ sphere.title }}</button>
       </div> -->
       <p v-if="error" class="error">{{ error }}</p>
-      <button class="btn ghost" type="button" @click="later">Пропустить</button>
-      <button class="btn tg-hide" type="submit" :disabled="pending">Далее</button>
+      <div class="btn-actions">
+        <button class="btn ghost" type="button" @click="later">Пропустить</button>
+        <button class="btn tg-hide" type="submit" :disabled="pending">Далее</button>
+      </div>
     </form>
   </main>
 </template>
