@@ -42,6 +42,7 @@ img { display: block; }
   flex-direction: column;
   padding: 16px 16px 140px;
   gap: 12px;
+  background: linear-gradient(rgb(212, 226, 253) 0%, rgb(236, 241, 252) 31%, rgb(245, 247, 252) 62%);
 }
 
 .screen.bare { padding-bottom: 28px; }
@@ -371,6 +372,7 @@ h2 { font-size: 18px; font-weight: 700; }
   padding: 0 16px;
 }
 .home-call span { flex: 1; text-align: center; }
+.settings-badge { filter: brightness(0) invert(1); }
 .home-own {
   display: flex;
   align-items: center;
@@ -779,3 +781,7 @@ h2.glossary-section.planned { font-weight: 700; }
 .sheet .linkish { align-self: center; }
 .share-toggle { display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
 .share-toggle small { display: block; color: var(--muted); font-size: 12px; font-weight: 500; }
+
+.field input {
+  margin-bottom: 12px;
+}
