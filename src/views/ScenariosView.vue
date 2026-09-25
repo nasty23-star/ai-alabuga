@@ -7,10 +7,16 @@ import chevron from '@/assets/onboarding/chevron.svg'
 import chevronLight from '@/assets/onboarding/chevron-light.svg'
 import flame from '@/assets/onboarding/flame.svg'
 import logo from '@/assets/onboarding/logo.svg'
+import peaksQuestionIcon from '@/assets/onboarding/peaks-question.png'
+import peaksVerholazIcon from '@/assets/onboarding/peaks-verholaz.png'
+import peaksKamnegryzIcon from '@/assets/onboarding/peaks-kamnegryz.png'
+import peaksSkalozavrIcon from '@/assets/onboarding/peaks-skalozavr.png'
+import peaksVershinoidIcon from '@/assets/onboarding/peaks-vershinoid.png'
+import peaksTsarIcon from '@/assets/onboarding/peaks-tsar.png'
 import { ApiError, getApi } from '@/api'
 import type { NegotiationListItem } from '@/api/types'
-import BadgeRow from '@/components/BadgeRow.vue'
-import { collectBadges, collectPeaks } from '@/gamification/badges'
+import { collectPeaks } from '@/gamification/badges'
+import type { Peak } from '@/gamification/badges'
 import { useGamificationStore } from '@/stores/gamification'
 import { useSessionStore } from '@/stores/session'
 import { useTelegramButtons } from '@/telegram'
@@ -25,10 +31,21 @@ const session = useSessionStore()
 const gamification = useGamificationStore()
 const history = ref<NegotiationListItem[]>([])
 const error = ref('')
-const badges = computed(() => collectBadges(history.value))
 const peaks = computed(() => collectPeaks(history.value))
 const earned = computed(() => peaks.value.filter((item) => item.earned).length)
 const initial = computed(() => (session.account?.display_name?.trim()?.[0] ?? 'Я').toUpperCase())
+
+const peakArt: Record<Peak['id'], string> = {
+  verholaz: peaksVerholazIcon,
+  kamnegryz: peaksKamnegryzIcon,
+  skalozavr: peaksSkalozavrIcon,
+  vershinoid: peaksVershinoidIcon,
+  tsar: peaksTsarIcon,
+}
+
+function artOf(peak: Peak) {
+  return peak.earned ? peakArt[peak.id] : peaksQuestionIcon
+}
 
 onMounted(async () => {
   gamification.hydrate()
@@ -66,7 +83,9 @@ async function openReview() {
       <span class="pill" style="color: #ea580c"><img :src="flame" alt="" width="16" height="16" /> {{ earned }} дней</span>
       <button class="pill" type="button" style="color: #3160f4" @click="router.push('/peaks')"><img :src="badgeIcon" alt="" width="16" height="16" /> {{ earned }} бейджей</button>
     </div>
-    <BadgeRow v-if="gamification.active" :badges="badges" />
+    <!-- <div v-if="gamification.active" class="badges">
+      <img v-for="peak in peaks" :key="peak.id" class="home-peak" :src="artOf(peak)" :alt="peak.title" width="64" height="64" />
+    </div> -->
     <button class="btn home-call tg-hide" type="button" @click="router.push('/scenarios/pick')">
       <span>Новое общение</span>
       <img :src="chevronLight" alt="" width="20" height="22" />

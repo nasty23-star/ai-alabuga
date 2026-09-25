@@ -406,6 +406,7 @@ h2 { font-size: 18px; font-weight: 700; }
 }
 .badge.earned { background: #eef4ff; }
 .badges { display: flex; gap: 8px; overflow: auto; }
+.home-peak { width: 64px; height: 64px; flex: none; object-fit: contain; }
 .pill {
   display: inline-flex;
   align-items: center;
