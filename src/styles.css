@@ -121,6 +121,61 @@ h2 { font-size: 18px; font-weight: 700; }
 .sky {
   background: linear-gradient(180deg, #8fbfff 0.6%, #c6deff 57.5%, #eaf2ff 81.4%, #f5f7fb 100%);
 }
+.climb-sky {
+  height: 388px;
+  border-radius: 37px;
+  position: relative;
+  overflow: hidden;
+}
+.climb-hills {
+  position: absolute;
+  left: -28px;
+  bottom: 0;
+  width: 470px;
+  max-width: none;
+}
+.climb-route {
+  position: absolute;
+  left: 37%;
+  top: 24%;
+  width: 128px;
+  height: auto;
+}
+.climb-pole {
+  position: absolute;
+  left: 39.5%;
+  top: 12%;
+  height: 35px;
+}
+.climb-flag {
+  position: absolute;
+  left: 40.5%;
+  top: 11%;
+  width: 28px;
+}
+.climb-mark {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--navy);
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.climb-mark img { flex: none; }
+.climb-mark.is-top {
+  left: 31%;
+  top: 20%;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.climb-mark.is-top span { transform: translateX(-14px); }
+.climb-mark.is-mid { left: 49%; top: 46%; }
+.climb-mark.is-low { left: 47%; top: 68%; }
+.climb-mark.is-low span { transform: translate(8px, -6px); }
 .hero-sky {
   background: linear-gradient(180deg, #8fbfff 14.87%, #c6deff 41.17%, #eaf2ff 55.56%, #f5f7fb 98%);
 }
