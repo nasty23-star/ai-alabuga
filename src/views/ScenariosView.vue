@@ -6,7 +6,6 @@ import chartCard from '@/assets/onboarding/chart-card.svg'
 import chevron from '@/assets/onboarding/chevron.svg'
 import chevronLight from '@/assets/onboarding/chevron-light.svg'
 import flame from '@/assets/onboarding/flame.svg'
-import mic from '@/assets/onboarding/mic.svg'
 import logo from '@/assets/onboarding/logo.svg'
 import { ApiError, getApi } from '@/api'
 import type { NegotiationListItem } from '@/api/types'
@@ -69,7 +68,6 @@ async function openReview() {
     </div>
     <BadgeRow v-if="gamification.active" :badges="badges" />
     <button class="btn home-call tg-hide" type="button" @click="router.push('/scenarios/pick')">
-      <img :src="mic" alt="" width="22" height="22" />
       <span>Новое общение</span>
       <img :src="chevronLight" alt="" width="20" height="22" />
     </button>
