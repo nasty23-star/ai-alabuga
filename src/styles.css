@@ -677,6 +677,53 @@ button.pill { cursor: pointer; }
 }
 .score-card b { font-size: 64px; line-height: 0.9; letter-spacing: -2.4px; }
 .score-card span { color: var(--muted); font-size: 14px; font-weight: 600; }
+.score-row { flex-direction: row; align-items: center; gap: 12px; }
+.score-row b { font-size: 56px; }
+.score-row > span { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.score-row > span .muted { font-size: 12px; font-weight: 500; }
+.score-row .score-pill { font-style: normal; }
+.review-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: #e7edf6;
+}
+.review-tabs button {
+  height: 40px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font-weight: 600;
+  color: #52525b;
+}
+.review-tabs button.on { background: #fff; color: var(--ink); box-shadow: 0 2px 6px rgb(30 64 175 / 10%); }
+.start-here { display: flex; flex-direction: column; gap: 10px; }
+.start-here header { display: flex; justify-content: space-between; align-items: center; }
+.start-here button {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+}
+.start-here i {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #e8f0ff;
+  color: var(--blue);
+  font-style: normal;
+  font-weight: 700;
+}
+.growth-note b { display: block; margin: 6px 0; }
 .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .metric {
   display: flex;

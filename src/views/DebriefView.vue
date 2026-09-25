@@ -133,6 +133,9 @@ const ttlHours = ref(24)
 const pending = ref(false)
 const copied = ref(false)
 const links = ref<ShareItem[]>([])
+const reviewTab = ref<'deal' | 'growth'>('deal')
+
+const DEAL_KEYS = new Set(['own_outcome', 'batna_gain', 'reservation_point_discipline', 'concession_discipline'])
 
 function glossaryHit(parts: Array<string | undefined>, query: string) {
   return parts.some((part) => part?.toLowerCase().includes(query))
@@ -173,6 +176,21 @@ const outcomeLabel = computed(() => {
   if (type === 'deal') return 'Сделка'
   if (type === 'partial_deal') return 'Частичная сделка'
   return 'Без сделки'
+})
+
+const outcomeShort = computed(() => {
+  const type = debrief.value?.outcome.type
+  if (type === 'deal') return 'сделка'
+  if (type === 'partial_deal') return 'частичная'
+  return 'без сделки'
+})
+
+const dealMetrics = computed(() => (debrief.value?.metrics ?? []).filter((metric) => DEAL_KEYS.has(metric.key)))
+const growthMetrics = computed(() => (debrief.value?.metrics ?? []).filter((metric) => !DEAL_KEYS.has(metric.key)))
+const startHere = computed(() => {
+  const areas = new Set(debrief.value?.growth_areas ?? [])
+  const picked = (debrief.value?.metrics ?? []).filter((metric) => areas.has(metric.key))
+  return (picked.length ? picked : growthMetrics.value).slice(0, 3)
 })
 
 onMounted(async () => {
@@ -365,33 +383,56 @@ useTelegramButtons(() => {
     </template>
 
     <template v-else-if="debrief && step === 'summary'">
+      <header class="pick-head">
+        <button class="back" type="button" @click="router.push('/scenarios')"><img :src="backIcon" alt="" width="20" height="20" /></button>
+        <b>Разбор</b>
+        <button class="back" type="button" aria-label="Поделиться" @click="sheet = true">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="5" cy="9" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="13" cy="5" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="13" cy="13" r="2" stroke="currentColor" stroke-width="1.5"/><path d="M7 8.2l4-2.4M7 9.8l4 2.4" stroke="currentColor" stroke-width="1.5"/></svg>
+        </button>
+      </header>
       <h1>{{ negotiation?.scenario.title ?? 'Разбор' }}</h1>
-      <p class="muted">Разбор</p>
-      <section class="score-card">
+      <p v-if="negotiation?.counterpart.name" class="muted">{{ negotiation.counterpart.name }}</p>
+      <section class="score-card score-row">
         <b>{{ score ?? '—' }}</b>
-        <span>Итоговый балл</span>
+        <span>Итоговый балл<span class="muted">взвешенное среднее</span></span>
+        <em class="score-pill" :class="debrief.outcome.type">{{ outcomeShort }}</em>
       </section>
-      <div class="metrics">
-        <button v-for="metric in debrief.metrics" :key="metric.key" class="metric" type="button" @click="openMetric(metric.key)">
+      <section v-if="startHere.length" class="card start-here">
+        <header><b>С чего начать</b><span class="muted">топ-{{ startHere.length }}</span></header>
+        <button v-for="(metric, index) in startHere" :key="metric.key" type="button" @click="openMetric(metric.key)">
+          <i>{{ index + 1 }}</i>
           <span>{{ metric.title }}</span>
           <b>{{ metric.available ? formatMetric(metric) : '—' }}</b>
-          <em :class="metric.available ? 'good' : 'muted'">{{ metric.available ? 'считается' : (metric.unavailable_reason ?? 'нет данных') }}</em>
+        </button>
+      </section>
+      <div class="review-tabs" role="tablist">
+        <button type="button" role="tab" :aria-selected="reviewTab === 'deal'" :class="{ on: reviewTab === 'deal' }" @click="reviewTab = 'deal'">Итог сделки</button>
+        <button type="button" role="tab" :aria-selected="reviewTab === 'growth'" :class="{ on: reviewTab === 'growth' }" @click="reviewTab = 'growth'">Мой рост</button>
+      </div>
+      <div v-if="reviewTab === 'deal'" class="metrics">
+        <button v-for="metric in dealMetrics" :key="metric.key" class="metric" type="button" @click="openMetric(metric.key)">
+          <em :class="metric.available ? 'good' : 'muted'">{{ metric.available ? 'считается' : 'заглушка' }}</em>
+          <span>{{ metric.title }}</span>
+          <b>{{ metric.available ? formatMetric(metric) : '—' }}</b>
         </button>
       </div>
-      <section class="split">
-        <article class="card">
-          <p class="muted">Итог сделки</p>
-          <b>{{ debrief.outcome.type === 'deal' ? 'Сделка' : debrief.outcome.type === 'partial_deal' ? 'Частично' : 'Без сделки' }}</b>
-          <p v-if="debrief.outcome.own_outcome != null">Выгода {{ Math.round(debrief.outcome.own_outcome) }}</p>
+      <template v-else>
+        <article v-for="(item, index) in debrief.guidance" :key="index" class="card growth-note">
+          <p class="muted">Точка роста</p>
+          <b>{{ item.advice }}</b>
+          <p>{{ item.claim }}</p>
+          <p class="muted">«{{ item.evidence.quote }}»</p>
         </article>
-        <article class="card">
-          <p class="muted">Мой рост</p>
-          <b>{{ debrief.guidance[0]?.advice ?? 'Разбор без отдельной точки роста' }}</b>
-        </article>
-      </section>
+        <div class="metrics">
+          <button v-for="metric in growthMetrics" :key="metric.key" class="metric" type="button" @click="openMetric(metric.key)">
+            <em :class="metric.available ? 'good' : 'muted'">{{ metric.available ? 'считается' : 'заглушка' }}</em>
+            <span>{{ metric.title }}</span>
+            <b>{{ metric.available ? formatMetric(metric) : '—' }}</b>
+          </button>
+        </div>
+      </template>
       <button class="linkish debrief-link" type="button" @click="step = 'glossary'">Что значат метрики</button>
-      <button class="btn" type="button" @click="sheet = true">Поделиться с руководителем</button>
-      <button class="btn tg-hide" type="button" @click="again">Новое общение</button>
+      <button class="btn tg-hide" type="button" @click="again">Новый созвон</button>
       <button class="btn ghost" type="button" @click="again">Новая попытка</button>
     </template>
 
