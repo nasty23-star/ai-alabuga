@@ -3,10 +3,13 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import badgeIcon from '@/assets/onboarding/badge.svg'
 import chartCard from '@/assets/onboarding/chart-card.svg'
+import chevron from '@/assets/onboarding/chevron.svg'
+import chevronLight from '@/assets/onboarding/chevron-light.svg'
 import flame from '@/assets/onboarding/flame.svg'
+import mic from '@/assets/onboarding/mic.svg'
 import wordmark from '@/assets/onboarding/wordmark.svg'
 import { ApiError, getApi } from '@/api'
-import type { NegotiationListItem, ScenariosResponse } from '@/api/types'
+import type { NegotiationListItem } from '@/api/types'
 import BadgeRow from '@/components/BadgeRow.vue'
 import { collectBadges } from '@/gamification/badges'
 import { useGamificationStore } from '@/stores/gamification'
@@ -16,21 +19,20 @@ import { useTelegramButtons } from '@/telegram'
 const router = useRouter()
 
 useTelegramButtons(() => ({
-  main: { text: 'Новые переговоры', onClick: () => { void router.push('/scenarios/pick') } },
+  main: { text: 'Новый созвон', onClick: () => { void router.push('/scenarios/pick') } },
   back: null,
 }))
 const session = useSessionStore()
 const gamification = useGamificationStore()
-const data = ref<ScenariosResponse | null>(null)
 const history = ref<NegotiationListItem[]>([])
 const error = ref('')
 const badges = computed(() => collectBadges(history.value))
 const earned = computed(() => badges.value.filter((item) => item.earned).length)
+const initial = computed(() => (session.account?.display_name?.trim()?.[0] ?? 'Я').toUpperCase())
 
 onMounted(async () => {
   gamification.hydrate()
   try {
-    data.value = await getApi().scenarios()
     if (gamification.active) history.value = (await getApi().listNegotiations(20, null)).items
   } catch (caught) {
     error.value = caught instanceof ApiError ? caught.message : 'Не удалось загрузить сценарии'
@@ -65,16 +67,25 @@ async function openReview() {
       <span class="pill" style="color: #3160f4"><img :src="badgeIcon" alt="" width="16" height="16" /> {{ earned }} бейджей</span>
     </div>
     <BadgeRow v-if="gamification.active" :badges="badges" />
-    <button class="btn tg-hide" type="button" @click="router.push('/scenarios/pick')">Новые переговоры</button>
+    <button class="btn home-call tg-hide" type="button" @click="router.push('/scenarios/pick')">
+      <img :src="mic" alt="" width="22" height="22" />
+      <span>Новый созвон</span>
+      <img :src="chevronLight" alt="" width="20" height="22" />
+    </button>
+    <button class="home-own" type="button" @click="router.push({ path: '/wizard', query: { persona: 'custom' } })">
+      <span class="home-own-icon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 3.5v11M3.5 9h11" stroke="#fff" stroke-width="1.8" stroke-linecap="round" /></svg>
+      </span>
+      <span class="pick-copy">
+        <b>Свой собеседник</b>
+        <span class="muted">Копия реального человека из Cognis или вручную</span>
+      </span>
+      <img :src="chevron" alt="" width="20" height="22" />
+    </button>
     <p v-if="error" class="error">{{ error }}</p>
-    <article v-for="theme in data?.themes ?? []" :key="theme.theme" class="card" style="display: flex; flex-direction: column; gap: 8px">
-      <b>{{ theme.title }}</b>
-      <p class="muted">{{ theme.tagline }}</p>
-      <button v-for="variant in theme.variants" :key="variant.id" class="btn ghost" type="button" style="text-align: left; color: #1a5cff" @click="router.push(`/wizard/${variant.id}`)">{{ variant.seat }}</button>
-    </article>
     <button class="card row" type="button" @click="openReview">
       <img :src="chartCard" alt="" width="22" height="22" />
-      <span><b>Здесь будет твой разбор</b><span class="muted" style="display: block">Появится после первых переговоров</span></span>
+      <span><b>Здесь будет твой разбор</b><span class="muted" style="display: block">Появится после первого созвона</span></span>
     </button>
   </main>
 </template>

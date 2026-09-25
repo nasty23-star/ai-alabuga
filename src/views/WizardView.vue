@@ -58,6 +58,7 @@ onMounted(async () => {
         weight: 'medium' as Weight,
       }))
     }
+    if (route.query.persona === 'custom') personaId.value = 'custom'
     const custom = people.items.find((item) => item.id === 'custom' && item.configured)
     if (custom) {
       const saved = await getApi().getCounterpart()
@@ -102,7 +103,7 @@ async function saveProfile() {
 
 function back() {
   if (step.value > 0) step.value -= 1
-  else void router.push('/scenarios/pick')
+  else void router.push(route.query.persona === 'custom' ? '/scenarios' : '/scenarios/pick')
 }
 
 useTelegramButtons(() => ({

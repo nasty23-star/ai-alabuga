@@ -350,6 +350,45 @@ h2 { font-size: 18px; font-weight: 700; }
 .pick-icon svg { display: block; }
 .pick-copy { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .pick-copy b { font-size: 16px; line-height: 20px; }
+.home-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  font-weight: 700;
+}
+.home-call {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+}
+.home-call span { flex: 1; text-align: center; }
+.home-own {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: 0;
+  text-align: left;
+  background: #e5f6b4;
+  border-radius: 22px;
+  padding: 14px 12px 14px 14px;
+  margin-bottom: 12px;
+}
+.home-own-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: #171717;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.home-own .muted { color: #4b5563; }
 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
 .badge {
