@@ -19,7 +19,7 @@ import { useTelegramButtons } from '@/telegram'
 const router = useRouter()
 
 useTelegramButtons(() => ({
-  main: { text: 'Новый созвон', onClick: () => { void router.push('/scenarios/pick') } },
+  main: { text: 'Новое общение', onClick: () => { void router.push('/scenarios/pick') } },
   back: null,
 }))
 const session = useSessionStore()
@@ -70,7 +70,7 @@ async function openReview() {
     <BadgeRow v-if="gamification.active" :badges="badges" />
     <button class="btn home-call tg-hide" type="button" @click="router.push('/scenarios/pick')">
       <img :src="mic" alt="" width="22" height="22" />
-      <span>Новый созвон</span>
+      <span>Новое общение</span>
       <img :src="chevronLight" alt="" width="20" height="22" />
     </button>
     <button class="home-own" type="button" @click="router.push({ path: '/wizard', query: { persona: 'custom' } })">
@@ -86,7 +86,7 @@ async function openReview() {
     <p v-if="error" class="error">{{ error }}</p>
     <button class="card row" type="button" @click="openReview">
       <img :src="chartCard" alt="" width="22" height="22" />
-      <span><b>Здесь будет твой разбор</b><span class="muted" style="display: block">Появится после первого созвона</span></span>
+      <span><b>Здесь будет твой разбор</b><span class="muted" style="display: block">Появится после первого общения</span></span>
     </button>
   </main>
 </template>

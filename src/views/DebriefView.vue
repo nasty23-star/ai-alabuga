@@ -285,7 +285,7 @@ useTelegramButtons(() => {
       },
     }
   }
-  return { main: { text: 'Новый созвон', onClick: again }, back: () => { void router.push('/scenarios') } }
+  return { main: { text: 'Новое общение', onClick: again }, back: () => { void router.push('/scenarios') } }
 })
 </script>
 
@@ -345,7 +345,7 @@ useTelegramButtons(() => {
       </section>
       <button class="linkish debrief-link" type="button" @click="step = 'glossary'">Что значат метрики</button>
       <button class="btn" type="button" @click="sheet = true">Поделиться с руководителем</button>
-      <button class="btn tg-hide" type="button" @click="again">Новый созвон</button>
+      <button class="btn tg-hide" type="button" @click="again">Новое общение</button>
       <button class="btn ghost" type="button" @click="again">Новая попытка</button>
     </template>
 

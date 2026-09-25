@@ -70,7 +70,7 @@ useTelegramButtons(() => ({
   <main class="screen">
     <header class="pick-head">
       <button class="back" type="button" @click="router.push('/scenarios')"><img :src="backIcon" alt="" width="20" height="20" /></button>
-      <b>Новый созвон</b>
+      <b>Новое общение</b>
     </header>
     <h1>Выбери сценарий</h1>
     <p v-if="error" class="error">{{ error }}</p>

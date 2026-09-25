@@ -230,7 +230,7 @@ useTelegramButtons(() => {
   }
   if (review.value === 'scenario') {
     return {
-      main: { text: 'Начать созвон', enabled: !pending.value, progress: pending.value, onClick: () => { void start() } },
+      main: { text: 'Начать общение', enabled: !pending.value, progress: pending.value, onClick: () => { void start() } },
       back: () => { review.value = 'card' },
     }
   }
@@ -392,7 +392,7 @@ async function start() {
         <span class="muted" aria-hidden="true">›</span>
       </button>
     </article>
-    <button class="btn" type="button" :disabled="pending" @click="start">Начать созвон</button>
+    <button class="btn" type="button" :disabled="pending" @click="start">Начать общение</button>
   </main>
 
   <main v-else-if="customOpen" class="screen own">
