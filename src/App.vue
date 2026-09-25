@@ -22,7 +22,7 @@ const showNav = computed(() => !booting.value && session.isAuthenticated && sess
 const navItems = [
   { to: '/scenarios', label: 'Сценарии', icon: navHome, match: ['scenarios', 'pick'] },
   { to: '/wizard', label: 'Новые переговоры', icon: navFile, match: ['wizard'] },
-  { to: '/history', label: 'Разбор', icon: navChart, match: ['history', 'debrief'] },
+  { to: '/history', label: 'Разбор', icon: navChart, match: ['history', 'debrief', 'peaks'] },
   { to: '/settings', label: 'Профиль', icon: navBell, match: ['settings'] },
 ]
 

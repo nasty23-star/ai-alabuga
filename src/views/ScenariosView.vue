@@ -11,7 +11,7 @@ import wordmark from '@/assets/onboarding/wordmark.svg'
 import { ApiError, getApi } from '@/api'
 import type { NegotiationListItem } from '@/api/types'
 import BadgeRow from '@/components/BadgeRow.vue'
-import { collectBadges } from '@/gamification/badges'
+import { collectBadges, collectPeaks } from '@/gamification/badges'
 import { useGamificationStore } from '@/stores/gamification'
 import { useSessionStore } from '@/stores/session'
 import { useTelegramButtons } from '@/telegram'
@@ -27,7 +27,8 @@ const gamification = useGamificationStore()
 const history = ref<NegotiationListItem[]>([])
 const error = ref('')
 const badges = computed(() => collectBadges(history.value))
-const earned = computed(() => badges.value.filter((item) => item.earned).length)
+const peaks = computed(() => collectPeaks(history.value))
+const earned = computed(() => peaks.value.filter((item) => item.earned).length)
 const initial = computed(() => (session.account?.display_name?.trim()?.[0] ?? 'Я').toUpperCase())
 
 onMounted(async () => {
@@ -64,7 +65,7 @@ async function openReview() {
     <p class="body">Начнём первое восхождение</p>
     <div v-if="gamification.active" class="row">
       <span class="pill" style="color: #ea580c"><img :src="flame" alt="" width="16" height="16" /> {{ earned }} дней</span>
-      <span class="pill" style="color: #3160f4"><img :src="badgeIcon" alt="" width="16" height="16" /> {{ earned }} бейджей</span>
+      <button class="pill" type="button" style="color: #3160f4" @click="router.push('/peaks')"><img :src="badgeIcon" alt="" width="16" height="16" /> {{ earned }} бейджей</button>
     </div>
     <BadgeRow v-if="gamification.active" :badges="badges" />
     <button class="btn home-call tg-hide" type="button" @click="router.push('/scenarios/pick')">

@@ -40,6 +40,71 @@ const COPY: Record<string, { en: string; text: string }> = {
   },
 }
 
+interface GlossaryEntry {
+  title: string
+  en: string
+  text: string
+}
+
+const GLOSSARY_MVP: GlossaryEntry[] = [
+  {
+    title: 'Слова-паразиты',
+    en: 'Filler Density',
+    text: 'Доля «ну», «как бы», «типа», «короче», «в общем» среди всех твоих слов',
+  },
+  {
+    title: 'Вопросы, чтобы получить информацию',
+    en: 'Open Question Ratio',
+    text: 'Доля открытых вопросов («почему», «как», «что для вас важно») среди всех твоих вопросов',
+  },
+  {
+    title: 'Уступки собеседнику',
+    en: 'Concession Discipline',
+    text: 'Доля уступок, сделанных в обмен на что-то. 100% — ни одной уступки просто так',
+  },
+  {
+    title: 'Выгодность сделки',
+    en: 'Own Outcome',
+    text: 'Насколько итог хорош по твоим приоритетам из мастера: 0 — твоя граница, 100 — идеал',
+  },
+  {
+    title: 'Выгодность альтернативной сделки',
+    en: 'BATNA Gain',
+    text: 'Насколько сделка лучше плана Б. Минус — лучше было не договариваться. Только если план Б задан числом',
+  },
+  {
+    title: 'Реакция на возражения',
+    en: 'Objection Recognition',
+    text: 'Доля возражений собеседника, на которые ты отреагировал, а не пропустил',
+  },
+  {
+    title: 'Согласие на невыгодные условия',
+    en: 'Reservation Point Discipline',
+    text: 'Не согласился ли ты на условия хуже своей границы: да или нет',
+  },
+  {
+    title: 'Выясненные неизвестные факты',
+    en: 'Information Gathering',
+    text: 'Доля скрытых фактов сценария, которые ты выяснил',
+  },
+  {
+    title: 'Аргументы',
+    en: 'Objective Criteria',
+    text: 'Опирался ли на рыночную цену, регламент, прецедент — вместо «я так хочу»',
+  },
+]
+
+const GLOSSARY_DERIVED: { title: string; text: string }[] = [
+  { title: 'Итоговый балл', text: 'взвешенное среднее числовых метрик. Веса задаются в таблице порогов.' },
+  { title: 'Топ-3 зоны роста', text: 'три метрики, сильнее всего отстающие от порога. С них начинается разбор.' },
+]
+
+const GLOSSARY_PLANNED: { title: string; en: string }[] = [
+  { title: 'Баланс речи', en: 'Talk/Listen Ratio' },
+  { title: 'Самый длинный монолог', en: 'Longest Monologue' },
+  { title: 'Скорость ответа', en: 'Response Latency' },
+]
+
 const route = useRoute()
 const router = useRouter()
 const id = computed(() => String(route.params.id))
@@ -60,11 +125,36 @@ const otherwise = ref('')
 const nextAsk = ref('')
 const selectedKey = ref('')
 const sheet = ref(false)
+const glossaryQuery = ref('')
 const includeTranscript = ref(false)
 const ttlHours = ref(24)
 const pending = ref(false)
 const copied = ref(false)
 const links = ref<ShareItem[]>([])
+
+function glossaryHit(parts: Array<string | undefined>, query: string) {
+  return parts.some((part) => part?.toLowerCase().includes(query))
+}
+
+const glossaryMvp = computed(() => {
+  const query = glossaryQuery.value.trim().toLowerCase()
+  if (!query || 'считаем в mvp'.includes(query)) return GLOSSARY_MVP
+  return GLOSSARY_MVP.filter((item) => glossaryHit([item.title, item.en, item.text], query))
+})
+
+const glossaryDerived = computed(() => {
+  const query = glossaryQuery.value.trim().toLowerCase()
+  if (!query || 'производные'.includes(query)) return GLOSSARY_DERIVED
+  return GLOSSARY_DERIVED.filter((item) => glossaryHit([item.title, item.text], query))
+})
+
+const glossaryPlanned = computed(() => {
+  const query = glossaryQuery.value.trim().toLowerCase()
+  if (!query || 'в разработке'.includes(query)) return GLOSSARY_PLANNED
+  return GLOSSARY_PLANNED.filter((item) => glossaryHit([item.title, item.en], query))
+})
+
+const glossaryEmpty = computed(() => !glossaryMvp.value.length && !glossaryDerived.value.length && !glossaryPlanned.value.length)
 
 const selected = computed(() => debrief.value?.metrics.find((metric) => metric.key === selectedKey.value) ?? null)
 const score = computed(() => {
@@ -177,7 +267,10 @@ useTelegramButtons(() => {
       back: () => { sheet.value = false },
     }
   }
-  if (step.value === 'metric' || step.value === 'glossary') {
+  if (step.value === 'glossary') {
+    return { main: null, back: () => { step.value = 'summary' } }
+  }
+  if (step.value === 'metric') {
     return { main: { text: 'Все метрики', onClick: () => { step.value = 'summary' } }, back: () => { step.value = 'summary' } }
   }
   if (step.value === 'feedback') {
@@ -250,7 +343,7 @@ useTelegramButtons(() => {
           <b>{{ debrief.guidance[0]?.advice ?? 'Разбор без отдельной точки роста' }}</b>
         </article>
       </section>
-      <button class="linkish debrief-link" type="button" @click="step = 'glossary'">Что значит метрики</button>
+      <button class="linkish debrief-link" type="button" @click="step = 'glossary'">Что значат метрики</button>
       <button class="btn" type="button" @click="sheet = true">Поделиться с руководителем</button>
       <button class="btn tg-hide" type="button" @click="again">Новый созвон</button>
       <button class="btn ghost" type="button" @click="again">Новая попытка</button>
@@ -270,16 +363,56 @@ useTelegramButtons(() => {
     </template>
 
     <template v-else-if="debrief && step === 'glossary'">
-      <button class="back" type="button" @click="step = 'summary'"><img :src="backIcon" alt="" width="20" height="20" /></button>
-      <h1>Что значат метрики</h1>
-      <article v-for="metric in debrief.metrics" :key="metric.key" class="card glossary">
-        <i :class="metric.zone" />
-        <div>
-          <b>{{ metric.title }}</b>
-          <p class="muted">{{ COPY[metric.key]?.en }}</p>
-          <p>{{ COPY[metric.key]?.text ?? formatMetric(metric) }}</p>
+      <header class="pick-head">
+        <button class="back" type="button" @click="step = 'summary'"><img :src="backIcon" alt="" width="20" height="20" /></button>
+        <b>Глоссарий</b>
+        <span />
+      </header>
+      <h1 class="glossary-title">Что значат метрики</h1>
+      <label class="glossary-search">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <circle cx="8" cy="8" r="5.25" stroke="currentColor" stroke-width="1.6" />
+          <path d="M12 12.5L15.2 15.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+        </svg>
+        <input v-model="glossaryQuery" type="search" placeholder="Найти метрику" autocomplete="off" />
+      </label>
+
+      <section v-if="glossaryMvp.length" class="glossary-block">
+        <div class="glossary-section">
+          <h2>Считаем в MVP</h2>
+          <i />
         </div>
+        <article class="card glossary-card">
+          <div v-for="item in glossaryMvp" :key="item.en" class="glossary-row">
+            <i />
+            <div>
+              <b>{{ item.title }}</b>
+              <p class="en">{{ item.en }}</p>
+              <p>{{ item.text }}</p>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <article v-if="glossaryDerived.length" class="card glossary-derived">
+        <h2>Производные</h2>
+        <p v-for="item in glossaryDerived" :key="item.title"><b>{{ item.title }}</b> — {{ item.text }}</p>
       </article>
+
+      <section v-if="glossaryPlanned.length" class="glossary-block">
+        <h2 class="glossary-section planned">В разработке</h2>
+        <article class="card glossary-card planned">
+          <div v-for="item in glossaryPlanned" :key="item.en" class="glossary-row">
+            <i />
+            <div>
+              <b>{{ item.title }}</b>
+              <p class="en">{{ item.en }}</p>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <p v-if="glossaryEmpty" class="muted">Ничего не нашлось</p>
     </template>
 
     <template v-else-if="step === 'links'">
