@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import backIcon from '@/assets/onboarding/back.svg'
+import peaksArt from '@/assets/onboarding/peaks.svg'
 import { ApiError, getApi } from '@/api'
 import { useTelegramButtons } from '@/telegram'
 import type { Debrief, Metric, NegotiationState } from '@/api/types'
@@ -111,7 +112,7 @@ const id = computed(() => String(route.params.id))
 const debrief = ref<Debrief | null>(null)
 const negotiation = ref<NegotiationState | null>(null)
 const error = ref('')
-const step = ref<'feedback' | 'summary' | 'metric' | 'glossary' | 'links'>('feedback')
+const step = ref<'score' | 'feedback' | 'summary' | 'metric' | 'glossary' | 'links'>('score')
 const scales = [
   { id: 'value', title: 'Насколько итог выгоден для тебя?' },
   { id: 'confident', title: 'Насколько уверенно ты себя чувствовал?' },
@@ -125,6 +126,7 @@ const otherwise = ref('')
 const nextAsk = ref('')
 const selectedKey = ref('')
 const sheet = ref(false)
+const rateSheet = ref(false)
 const glossaryQuery = ref('')
 const includeTranscript = ref(false)
 const ttlHours = ref(24)
@@ -164,6 +166,13 @@ const score = computed(() => {
   if (!numbers.length) return null
   const total = numbers.reduce((sum, metric) => sum + Number(metric.value), 0)
   return Math.round(total / numbers.length)
+})
+
+const outcomeLabel = computed(() => {
+  const type = debrief.value?.outcome.type
+  if (type === 'deal') return 'Сделка'
+  if (type === 'partial_deal') return 'Частичная сделка'
+  return 'Без сделки'
 })
 
 onMounted(async () => {
@@ -273,6 +282,18 @@ useTelegramButtons(() => {
   if (step.value === 'metric') {
     return { main: { text: 'Все метрики', onClick: () => { step.value = 'summary' } }, back: () => { step.value = 'summary' } }
   }
+  if (step.value === 'score') {
+    if (rateSheet.value) {
+      return {
+        main: { text: 'Да, оценить', onClick: () => { rateSheet.value = false; step.value = 'feedback' } },
+        back: () => { rateSheet.value = false },
+      }
+    }
+    return {
+      main: { text: 'Смотреть разбор', onClick: () => { rateSheet.value = true } },
+      back: () => { void router.push('/scenarios') },
+    }
+  }
   if (step.value === 'feedback') {
     return { main: { text: 'К разбору', onClick: () => { step.value = 'summary' } }, back: () => { void router.push('/scenarios') } }
   }
@@ -290,10 +311,35 @@ useTelegramButtons(() => {
 </script>
 
 <template>
-  <main class="screen debrief">
+  <main class="screen debrief" :class="{ 'score-screen': step === 'score' }">
     <p v-if="error" class="error">{{ error }}</p>
 
-    <template v-if="debrief && step === 'feedback'">
+    <template v-if="debrief && step === 'score'">
+      <header class="score-head">
+        <button class="back" type="button" aria-label="Закрыть" @click="router.push('/scenarios')">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </button>
+      </header>
+      <div class="score-hero">
+        <span class="score-pill" :class="debrief.outcome.type">{{ outcomeLabel }}</span>
+        <b>{{ score ?? '—' }}</b>
+        <span>итоговый балл</span>
+      </div>
+      <div class="score-art">
+        <img :src="peaksArt" alt="" />
+      </div>
+      <button class="btn" type="button" @click="rateSheet = true">Смотреть разбор</button>
+      <div v-if="rateSheet" class="sheet-backdrop" @click.self="rateSheet = false">
+        <section class="sheet">
+          <h2>Оценишь ценность сделки?</h2>
+          <p class="muted">7 коротких вопросов, около минуты. Руководитель увидит не только цифры, но и как прошли переговоры</p>
+          <button class="btn" type="button" @click="rateSheet = false; step = 'feedback'">Да, оценить</button>
+          <button class="btn ghost" type="button" @click="rateSheet = false; step = 'summary'">Нет, сразу к разбору</button>
+        </section>
+      </div>
+    </template>
+
+    <template v-else-if="debrief && step === 'feedback'">
       <h1>Как прошли переговоры?</h1>
       <article v-for="item in scales" :key="item.id" class="card reflect">
         <p>{{ item.title }}</p>

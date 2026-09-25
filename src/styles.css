@@ -625,6 +625,23 @@ button.pill { cursor: pointer; }
 /* .tg-app .tg-hide { display: none; } */
 
 .debrief { position: relative; background: #f5f7fb; }
+.score-screen { background: linear-gradient(180deg, #e8eefc 0%, #f7f9fd 42%, #f7f9fd 100%); }
+.score-head { display: flex; justify-content: flex-end; }
+.score-hero { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
+.score-pill {
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: #eceef2;
+  color: #52525b;
+  font-size: 13px;
+  font-weight: 600;
+}
+.score-pill.partial_deal { background: #f6e7a8; color: #7a5b10; }
+.score-pill.deal { background: #dcfce7; color: #15803d; }
+.score-hero b { font-size: 72px; line-height: 0.95; letter-spacing: -2.4px; font-weight: 700; }
+.score-hero > span:last-child { color: #71717a; font-size: 15px; }
+.score-art { flex: 1; min-height: 180px; display: flex; align-items: flex-end; }
+.score-art img { width: 100%; height: 100%; object-fit: contain; object-position: center bottom; }
 .reflect { display: flex; flex-direction: column; gap: 12px; }
 .reflect p, .reflect span { font-size: 15px; font-weight: 600; line-height: 20px; }
 .scale { display: flex; justify-content: space-between; gap: 6px; }
