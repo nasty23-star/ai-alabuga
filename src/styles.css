@@ -277,6 +277,24 @@ h2 { font-size: 18px; font-weight: 700; }
 .composer .btn { width: auto; padding: 0 18px; }
 
 .error { color: #dc2626; font-size: 13px; }
+.pick-head { display: grid; grid-template-columns: 42px 1fr 42px; align-items: center; }
+.pick-head b { text-align: center; font-size: 16px; }
+.pick-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: 0;
+  background: #fff;
+  border-radius: 22px;
+  padding: 14px 12px 14px 14px;
+  text-align: left;
+  box-shadow: 0 8px 10px rgb(30 64 175 / 8%);
+}
+.pick-icon { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+.pick-icon svg { display: block; }
+.pick-copy { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.pick-copy b { font-size: 16px; line-height: 20px; }
 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
 .badge {
@@ -323,6 +341,29 @@ h2 { font-size: 18px; font-weight: 700; }
 /* .tg-app .tg-hide { display: none; } */
 
 .debrief { position: relative; background: #f5f7fb; }
+.reflect { display: flex; flex-direction: column; gap: 12px; }
+.reflect p, .reflect span { font-size: 15px; font-weight: 600; line-height: 20px; }
+.scale { display: flex; justify-content: space-between; gap: 6px; }
+.scale button {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: #eef3fb;
+  color: #334155;
+  font-weight: 700;
+}
+.scale button.on { background: var(--blue); color: #fff; }
+.reflect textarea {
+  width: 100%;
+  border: 0;
+  resize: none;
+  background: #f5f7fb;
+  border-radius: 14px;
+  padding: 12px;
+  font: inherit;
+  font-weight: 500;
+}
 .score-card {
   display: flex;
   flex-direction: column;

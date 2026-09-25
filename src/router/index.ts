@@ -5,6 +5,7 @@ import ChatView from '@/views/ChatView.vue'
 import DebriefView from '@/views/DebriefView.vue'
 import HistoryView from '@/views/HistoryView.vue'
 import OnboardingView from '@/views/OnboardingView.vue'
+import ScenarioPickView from '@/views/ScenarioPickView.vue'
 import ScenariosView from '@/views/ScenariosView.vue'
 import SettingsView from '@/views/SettingsView.vue'
 import SharedView from '@/views/SharedView.vue'
@@ -19,6 +20,7 @@ const router = createRouter({
     { path: '/onboarding', name: 'onboarding', component: OnboardingView, meta: { bare: true } },
     { path: '/', redirect: '/scenarios' },
     { path: '/scenarios', name: 'scenarios', component: ScenariosView },
+    { path: '/scenarios/pick', name: 'pick', component: ScenarioPickView },
     { path: '/wizard/:scenarioId?', name: 'wizard', component: WizardView },
     { path: '/negotiations/:id', name: 'chat', component: ChatView },
     { path: '/negotiations/:id/debrief', name: 'debrief', component: DebriefView },

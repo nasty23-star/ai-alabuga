@@ -16,7 +16,7 @@ import { useTelegramButtons } from '@/telegram'
 const router = useRouter()
 
 useTelegramButtons(() => ({
-  main: { text: 'Новые переговоры', onClick: () => { void router.push('/wizard') } },
+  main: { text: 'Новые переговоры', onClick: () => { void router.push('/scenarios/pick') } },
   back: null,
 }))
 const session = useSessionStore()
@@ -57,7 +57,6 @@ async function openReview() {
   <main class="screen" style="background: linear-gradient(180deg, #d4e2fd 0%, #ecf1fc 31%, #f5f7fc 62%)">
     <header class="row" style="justify-content: space-between">
       <img :src="wordmark" alt="Вершина" height="22" />
-      <span class="pill" style="width: 44px; height: 44px; justify-content: center; color: #3160f4">Я</span>
     </header>
     <h1 style="font-size: 26px; letter-spacing: -0.78px">Привет, {{ session.account?.display_name || 'Мистер X' }}!</h1>
     <p class="body">Начнём первое восхождение</p>
@@ -66,7 +65,7 @@ async function openReview() {
       <span class="pill" style="color: #3160f4"><img :src="badgeIcon" alt="" width="16" height="16" /> {{ earned }} бейджей</span>
     </div>
     <BadgeRow v-if="gamification.active" :badges="badges" />
-    <button class="btn tg-hide" type="button" @click="router.push('/wizard')">Новые переговоры</button>
+    <button class="btn tg-hide" type="button" @click="router.push('/scenarios/pick')">Новые переговоры</button>
     <p v-if="error" class="error">{{ error }}</p>
     <article v-for="theme in data?.themes ?? []" :key="theme.theme" class="card" style="display: flex; flex-direction: column; gap: 8px">
       <b>{{ theme.title }}</b>

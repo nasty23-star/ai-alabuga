@@ -65,7 +65,7 @@ async function run(action: () => Promise<void>) {
     <img class="auth-snow" :src="snow" alt="" />
     <img class="auth-pole" :src="flagPole" alt="" />
     <img class="auth-flag" :src="flag" alt="" />
-    <!-- <button class="btn tg-hide auth-cta" type="button" @click="step = 'form'">Начать восхождение</button> -->
+    <button class="btn tg-hide auth-cta" type="button" @click="step = 'form'">Начать восхождение</button>
   </main>
 
   <main v-else class="screen bare auth-form">

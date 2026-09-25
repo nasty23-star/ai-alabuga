@@ -46,7 +46,18 @@ const id = computed(() => String(route.params.id))
 const debrief = ref<Debrief | null>(null)
 const negotiation = ref<NegotiationState | null>(null)
 const error = ref('')
-const step = ref<'summary' | 'metric' | 'glossary' | 'links'>('summary')
+const step = ref<'feedback' | 'summary' | 'metric' | 'glossary' | 'links'>('feedback')
+const scales = [
+  { id: 'value', title: 'Насколько итог выгоден для тебя?' },
+  { id: 'confident', title: 'Насколько уверенно ты себя чувствовал?' },
+  { id: 'priorities', title: 'Достигнуто ли согласие по своим приоритетам?' },
+  { id: 'liked', title: 'Тебе это понравилось?' },
+  { id: 'honest', title: 'Насколько честным был разговор?' },
+  { id: 'again', title: 'Хочешь работать с этим человеком ещё?' },
+]
+const marks = ref<Record<string, number>>({})
+const otherwise = ref('')
+const nextAsk = ref('')
 const selectedKey = ref('')
 const sheet = ref(false)
 const includeTranscript = ref(false)
@@ -169,6 +180,9 @@ useTelegramButtons(() => {
   if (step.value === 'metric' || step.value === 'glossary') {
     return { main: { text: 'Все метрики', onClick: () => { step.value = 'summary' } }, back: () => { step.value = 'summary' } }
   }
+  if (step.value === 'feedback') {
+    return { main: { text: 'К разбору', onClick: () => { step.value = 'summary' } }, back: () => { void router.push('/scenarios') } }
+  }
   if (step.value === 'links') {
     return {
       main: null,
@@ -186,7 +200,32 @@ useTelegramButtons(() => {
   <main class="screen debrief">
     <p v-if="error" class="error">{{ error }}</p>
 
-    <template v-if="debrief && step === 'summary'">
+    <template v-if="debrief && step === 'feedback'">
+      <h1>Как прошли переговоры?</h1>
+      <article v-for="item in scales" :key="item.id" class="card reflect">
+        <p>{{ item.title }}</p>
+        <div class="scale">
+          <button
+            v-for="mark in 7"
+            :key="mark"
+            type="button"
+            :class="{ on: marks[item.id] === mark }"
+            @click="marks[item.id] = mark"
+          >{{ mark }}</button>
+        </div>
+      </article>
+      <label class="card reflect">
+        <span>Что бы сделал иначе?</span>
+        <textarea v-model="otherwise" rows="3" placeholder="Например, раньше спросил бы про сроки" />
+      </label>
+      <label class="card reflect">
+        <span>Что спросить в следующий раз?</span>
+        <textarea v-model="nextAsk" rows="3" placeholder="Раньше спросил бы про сроки" />
+      </label>
+      <button class="btn tg-hide" type="button" @click="step = 'summary'">К разбору</button>
+    </template>
+
+    <template v-else-if="debrief && step === 'summary'">
       <h1>{{ negotiation?.scenario.title ?? 'Разбор' }}</h1>
       <p class="muted">Разбор</p>
       <section class="score-card">

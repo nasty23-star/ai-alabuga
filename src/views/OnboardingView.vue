@@ -122,9 +122,9 @@ useTelegramButtons(() => ({
     <p class="muted">Подберём сценарии под твою работу</p>
     <form style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px" @submit.prevent="save">
       <label class="field">Как к тебе обращаться<input v-model="name" placeholder="Введите имя" /></label>
-      <div class="row">
+      <!-- <div class="row">
         <button v-for="sphere in spheres" :key="sphere.id" type="button" class="chip" :class="{ on: selected.includes(sphere.id) }" @click="toggle(sphere.id)">{{ sphere.title }}</button>
-      </div>
+      </div> -->
       <p v-if="error" class="error">{{ error }}</p>
       <button class="btn ghost" type="button" @click="later">Пропустить</button>
       <button class="btn tg-hide" type="submit" :disabled="pending">Далее</button>

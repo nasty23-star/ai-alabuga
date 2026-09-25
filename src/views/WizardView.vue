@@ -102,7 +102,7 @@ async function saveProfile() {
 
 function back() {
   if (step.value > 0) step.value -= 1
-  else void router.push('/scenarios')
+  else void router.push('/scenarios/pick')
 }
 
 useTelegramButtons(() => ({
