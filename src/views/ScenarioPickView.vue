@@ -5,6 +5,8 @@ import backIcon from '@/assets/onboarding/back.svg'
 import chevron from '@/assets/onboarding/chevron.svg'
 import { ApiError, getApi } from '@/api'
 import type { ScenarioTheme } from '@/api/types'
+import { scenarioVariant } from '@/scenarios'
+import { useSessionStore } from '@/stores/session'
 import { useTelegramButtons } from '@/telegram'
 
 const ICONS: Record<string, { bg: string; color: string; svg: string }> = {
@@ -44,6 +46,7 @@ const BLURBS: Record<string, string> = {
 }
 
 const router = useRouter()
+const session = useSessionStore()
 const themes = ref<ScenarioTheme[]>([])
 const error = ref('')
 
@@ -56,7 +59,7 @@ onMounted(async () => {
 })
 
 function open(theme: ScenarioTheme) {
-  const id = theme.variants[0]?.id
+  const id = scenarioVariant(theme, session.account?.spheres ?? [])?.id
   if (id) void router.push(`/wizard/${id}`)
 }
 
@@ -78,7 +81,7 @@ useTelegramButtons(() => ({
       <span class="pick-icon" :style="{ background: ICONS[theme.theme]?.bg ?? '#e8f0ff', color: ICONS[theme.theme]?.color ?? '#1a5cff' }" v-html="ICONS[theme.theme]?.svg ?? ICONS.order_placement.svg" />
       <span class="pick-copy">
         <b>{{ theme.title }}</b>
-        <span class="muted">{{ BLURBS[theme.theme] ?? theme.tagline }}</span>
+        <span class="muted">{{ scenarioVariant(theme, session.account?.spheres ?? [])?.seat ?? BLURBS[theme.theme] ?? theme.tagline }}</span>
       </span>
       <img :src="chevron" alt="" width="22" height="22" />
     </button>

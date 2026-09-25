@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import backIcon from '@/assets/onboarding/back.svg'
 import { ApiError, explainApiError, getApi } from '@/api'
+import { scenarioVariant } from '@/scenarios'
+import { useSessionStore } from '@/stores/session'
 import { useTelegramButtons } from '@/telegram'
 import type { CounterpartProfile, IssueDraft, IssueType, Persona, ScenarioCard, ScenarioTheme, Weight } from '@/api/types'
 
 const route = useRoute()
 const router = useRouter()
+const session = useSessionStore()
 const scenarioId = computed(() => (typeof route.params.scenarioId === 'string' ? route.params.scenarioId : null))
 const chosenId = ref<string | null>(scenarioId.value)
 const themes = ref<ScenarioTheme[]>([])
@@ -53,13 +56,8 @@ onMounted(async () => {
     issueTypes.value = types.items
     personas.value = people.items
     themes.value = catalog.themes
-    if (scenarioId.value) {
-      chosenId.value = scenarioId.value
-      card.value = await getApi().scenario(scenarioId.value)
-      goal.value = card.value.defaults.goal
-      batna.value = card.value.defaults.batna.text
-      issues.value = card.value.defaults.issues.map((issue) => ({ ...issue }))
-    } else if (types.items.length >= 2) {
+    if (scenarioId.value) await applyScenario(scenarioId.value, true)
+    else if (types.items.length >= 2) {
       issues.value = types.items.slice(0, 2).map((item) => ({
         type_id: item.id,
         reservation: item.range[0],
@@ -265,20 +263,45 @@ function startHint(): string {
   return `Нужно ещё указать: ${need.join(' и ')}`
 }
 
-async function chooseScenario(id: string | undefined) {
-  if (!id) return
+async function applyScenario(id: string, replace: boolean) {
   error.value = ''
+  const next = await getApi().scenario(id)
+  chosenId.value = id
+  card.value = next
+  if (replace) {
+    step.value = 0
+    review.value = null
+    pickingPersona.value = false
+    customOpen.value = false
+  }
+  if (replace || !(goal.value || '').trim()) goal.value = next.defaults.goal || ''
+  if (replace || !(batna.value || '').trim()) batna.value = next.defaults.batna?.text || ''
+  if (replace || !issues.value.length) {
+    issues.value = (next.defaults.issues ?? []).map((issue) => ({ ...issue }))
+  }
+}
+
+async function chooseScenario(id: string | undefined, replace = false) {
+  if (!id) return
   try {
-    const next = await getApi().scenario(id)
-    chosenId.value = id
-    card.value = next
-    if (!(goal.value || '').trim() && next.defaults.goal) goal.value = next.defaults.goal
-    if (!(batna.value || '').trim() && next.defaults.batna?.text) batna.value = next.defaults.batna.text
-    issues.value = next.defaults.issues.map((issue) => ({ ...issue }))
+    await applyScenario(id, replace)
   } catch (caught) {
     error.value = caught instanceof ApiError ? caught.message : 'Не удалось открыть сценарий'
   }
 }
+
+watch(scenarioId, (id, previous) => {
+  if (id && id !== previous) {
+    void chooseScenario(id, true)
+    return
+  }
+  if (!id && previous) {
+    chosenId.value = null
+    card.value = null
+    step.value = 0
+    review.value = null
+  }
+})
 
 async function start() {
   error.value = ''
@@ -359,7 +382,7 @@ async function start() {
     <p v-if="error" class="error">{{ error }}</p>
     <section v-if="!chosenId" class="stack">
       <p class="muted">Выберите сценарий</p>
-      <button v-for="theme in themes" :key="theme.theme" class="card" type="button" @click="chooseScenario(theme.variants[0]?.id)">
+      <button v-for="theme in themes" :key="theme.theme" class="card" type="button" @click="chooseScenario(scenarioVariant(theme, session.account?.spheres ?? [])?.id, true)">
         <b>{{ theme.title }}</b>
         <p class="muted">{{ theme.tagline }}</p>
       </button>
