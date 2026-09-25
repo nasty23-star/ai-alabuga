@@ -2,13 +2,15 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import backIcon from '@/assets/onboarding/back.svg'
-import { ApiError, getApi } from '@/api'
+import { ApiError, explainApiError, getApi } from '@/api'
 import { useTelegramButtons } from '@/telegram'
-import type { CounterpartProfile, IssueDraft, IssueType, Persona, ScenarioCard, Weight } from '@/api/types'
+import type { CounterpartProfile, IssueDraft, IssueType, Persona, ScenarioCard, ScenarioTheme, Weight } from '@/api/types'
 
 const route = useRoute()
 const router = useRouter()
 const scenarioId = computed(() => (typeof route.params.scenarioId === 'string' ? route.params.scenarioId : null))
+const chosenId = ref<string | null>(scenarioId.value)
+const themes = ref<ScenarioTheme[]>([])
 const step = ref(0)
 const error = ref('')
 const pending = ref(false)
@@ -33,6 +35,7 @@ const profile = reactive<CounterpartProfile>({
 })
 const customOpen = ref(false)
 const review = ref<null | 'card' | 'scenario'>(null)
+const pickingPersona = ref(false)
 const nameLine = ref('')
 const talkativeness = ref(15)
 const phraseDraft = ref('')
@@ -46,10 +49,12 @@ function typeOf(id: string) {
 
 onMounted(async () => {
   try {
-    const [types, people] = await Promise.all([getApi().issueTypes(), getApi().personas()])
+    const [types, people, catalog] = await Promise.all([getApi().issueTypes(), getApi().personas(), getApi().scenarios()])
     issueTypes.value = types.items
     personas.value = people.items
+    themes.value = catalog.themes
     if (scenarioId.value) {
+      chosenId.value = scenarioId.value
       card.value = await getApi().scenario(scenarioId.value)
       goal.value = card.value.defaults.goal
       batna.value = card.value.defaults.batna.text
@@ -130,16 +135,31 @@ async function importProfile() {
   }
 }
 
+function profileHint(): string {
+  applyNameLine()
+  const need: string[] = []
+  if (!profile.display_name) need.push('имя')
+  if (!profile.role) need.push('роль после запятой')
+  if (profile.display_name.length > 64) need.push('имя не длиннее 64 символов')
+  if (!need.length) return ''
+  const example = !profile.display_name || !profile.role ? ' Пример: «Ирина, CFO».' : ''
+  return `Нужно ещё: ${need.join(', ')}.${example}`
+}
+
 async function saveProfile() {
   error.value = ''
+  const hint = profileHint()
+  if (hint) {
+    error.value = hint
+    return
+  }
   pending.value = true
   try {
-    applyNameLine()
     await getApi().putCounterpart({ ...profile })
     closeCustom()
     review.value = 'card'
   } catch (caught) {
-    error.value = caught instanceof ApiError ? caught.message : 'Не удалось сохранить'
+    error.value = caught instanceof ApiError ? explainApiError(caught, 'Не удалось сохранить') : 'Не удалось сохранить'
   } finally {
     pending.value = false
   }
@@ -150,10 +170,26 @@ function back() {
   else void router.push(route.query.persona === 'custom' ? '/scenarios' : '/scenarios/pick')
 }
 
-const initials = computed(() => {
-  const parts = profile.display_name.trim().split(/\s+/).filter(Boolean)
+function letters(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
   return (parts.slice(0, 2).map((part) => part[0]).join('') || 'С').toUpperCase()
-})
+}
+
+const initials = computed(() => letters(profile.display_name))
+
+const selectedPersona = computed(() => personas.value.find((persona) => persona.id === personaId.value))
+
+const counterpartName = computed(() => (
+  personaId.value === 'custom'
+    ? (profile.display_name || 'Свой собеседник')
+    : (selectedPersona.value?.name || 'Собеседник')
+))
+
+const counterpartRole = computed(() => (
+  personaId.value === 'custom' ? profile.role : (selectedPersona.value?.tagline || '')
+))
+
+const counterpartInitials = computed(() => letters(counterpartName.value))
 
 const styleLine = computed(() => {
   const tone = profile.formality >= 0.66 ? 'Жёсткий, спорит цифрами' : profile.formality >= 0.33 ? 'Держит позицию' : 'Мягкий'
@@ -166,6 +202,19 @@ const weightLabel: Record<Weight, string> = { low: 'низкий', medium: 'ср
 function editCard() {
   review.value = null
   openCustom()
+}
+
+function changePersona() {
+  pickingPersona.value = true
+  customOpen.value = false
+  review.value = null
+  step.value = 3
+}
+
+function backToScenario() {
+  pickingPersona.value = false
+  customOpen.value = false
+  review.value = 'scenario'
 }
 
 useTelegramButtons(() => {
@@ -181,10 +230,16 @@ useTelegramButtons(() => {
       back: () => { review.value = 'card' },
     }
   }
+  if (pickingPersona.value && !customOpen.value) {
+    return {
+      main: { text: 'К сценарию', onClick: backToScenario },
+      back: backToScenario,
+    }
+  }
   return customOpen.value
   ? {
       main: { text: 'Сохранить собеседника', enabled: !pending.value, progress: pending.value, onClick: () => { void saveProfile() } },
-      back: closeCustom,
+      back: pickingPersona.value ? () => { customOpen.value = false } : closeCustom,
     }
   : {
       main: {
@@ -197,8 +252,37 @@ useTelegramButtons(() => {
     }
 })
 
+function startHint(): string {
+  const need: string[] = []
+  if (!chosenId.value) need.push('сценарий')
+  if (!(goal.value || '').trim()) need.push('цель переговоров')
+  if (!(batna.value || '').trim()) need.push('альтернативу — что будете делать, если не договоритесь')
+  if (!need.length) return ''
+  return `Нужно ещё указать: ${need.join(' и ')}`
+}
+
+async function chooseScenario(id: string | undefined) {
+  if (!id) return
+  error.value = ''
+  try {
+    const next = await getApi().scenario(id)
+    chosenId.value = id
+    card.value = next
+    if (!(goal.value || '').trim() && next.defaults.goal) goal.value = next.defaults.goal
+    if (!(batna.value || '').trim() && next.defaults.batna?.text) batna.value = next.defaults.batna.text
+    issues.value = next.defaults.issues.map((issue) => ({ ...issue }))
+  } catch (caught) {
+    error.value = caught instanceof ApiError ? caught.message : 'Не удалось открыть сценарий'
+  }
+}
+
 async function start() {
   error.value = ''
+  const hint = startHint()
+  if (hint) {
+    error.value = hint
+    return
+  }
   pending.value = true
   try {
     if (personaId.value === 'custom' && profile.display_name.trim()) {
@@ -206,19 +290,19 @@ async function start() {
       await getApi().putCounterpart({ ...profile })
     }
     const created = await getApi().startNegotiation({
-      scenario_id: scenarioId.value,
+      scenario_id: chosenId.value,
       persona_id: personaId.value,
       terms: {
-        goal: goal.value.trim(),
+        goal: (goal.value || '').trim(),
         issues: issues.value,
-        batna: { text: batna.value.trim() },
+        batna: { text: (batna.value || '').trim() },
         counterpart_note: note.value.trim() || null,
         own_constraints: constraints.value.trim() || null,
       },
     }, crypto.randomUUID())
     await router.push({ name: 'chat', params: { id: created.id }, state: { opening: created.opening_utterance } })
   } catch (caught) {
-    error.value = caught instanceof ApiError ? caught.message : 'Не удалось начать'
+    error.value = caught instanceof ApiError ? explainApiError(caught, 'Не удалось начать') : 'Не удалось начать'
   } finally {
     pending.value = false
   }
@@ -269,13 +353,20 @@ async function start() {
       <span />
     </header>
     <p v-if="error" class="error">{{ error }}</p>
-    <article class="card check-card">
+    <section v-if="!chosenId" class="stack">
+      <p class="muted">Выберите сценарий</p>
+      <button v-for="theme in themes" :key="theme.theme" class="card" type="button" @click="chooseScenario(theme.variants[0]?.id)">
+        <b>{{ theme.title }}</b>
+        <p class="muted">{{ theme.tagline }}</p>
+      </button>
+    </section>
+    <article v-else class="card check-card">
       <b class="check-title">{{ card?.theme_title || 'Свой сценарий' }}</b>
       <p v-if="card" class="muted">{{ card.seat }}</p>
-      <div class="check-block">
+      <label class="check-block check-edit">
         <span class="muted">Цель</span>
-        <b>{{ goal.trim() || 'Не задана' }}</b>
-      </div>
+        <textarea v-model="goal" rows="2" placeholder="Чего хотите добиться" @input="error = ''" />
+      </label>
       <div class="check-block">
         <span class="muted">Условия</span>
         <p v-for="issue in issues" :key="issue.type_id">
@@ -283,10 +374,19 @@ async function start() {
           <span class="muted"> {{ issue.reservation }} → {{ issue.ideal }} {{ typeOf(issue.type_id)?.unit }}, вес {{ weightLabel[issue.weight] }}</span>
         </p>
       </div>
-      <div v-if="batna.trim()" class="check-block">
+      <label class="check-block check-edit">
         <span class="muted">Альтернатива</span>
-        <b>{{ batna.trim() }}</b>
-      </div>
+        <textarea v-model="batna" rows="2" placeholder="Что будете делать, если не договоритесь" @input="error = ''" />
+      </label>
+      <button class="check-person check-switch" type="button" @click="changePersona">
+        <span class="check-avatar">{{ counterpartInitials }}</span>
+        <span class="pick-copy">
+          <span class="muted">Собеседник</span>
+          <b>{{ counterpartName }}</b>
+          <span v-if="counterpartRole" class="muted">{{ counterpartRole }}</span>
+        </span>
+        <span class="muted" aria-hidden="true">›</span>
+      </button>
     </article>
     <button class="btn" type="button" :disabled="pending" @click="start">Начать созвон</button>
   </main>
@@ -391,9 +491,12 @@ async function start() {
     </section>
 
     <div class="row">
-      <button v-if="step > 0" class="btn ghost" type="button" @click="step -= 1">Назад</button>
-      <button v-if="step < 3" class="btn tg-hide" type="button" @click="step += 1">Далее</button>
-      <button v-else class="btn tg-hide" type="button" :disabled="pending" @click="start">Начать</button>
+      <button v-if="pickingPersona" class="btn" type="button" @click="backToScenario">К сценарию</button>
+      <template v-else>
+        <button v-if="step > 0" class="btn ghost" type="button" @click="step -= 1">Назад</button>
+        <button v-if="step < 3" class="btn tg-hide" type="button" @click="step += 1">Далее</button>
+        <button v-else class="btn tg-hide" type="button" :disabled="pending" @click="start">Начать</button>
+      </template>
     </div>
   </main>
 </template>

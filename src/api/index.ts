@@ -2,7 +2,7 @@ import { bindAuth, createHttpApi } from './http'
 import { createMockApi } from './mock'
 
 export type { Api } from './http'
-export { ApiError } from './errors'
+export { ApiError, explainApiError } from './errors'
 
 const tokenRef = { current: null as string | null }
 let unauthorized = () => {}

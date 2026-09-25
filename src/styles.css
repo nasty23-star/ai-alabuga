@@ -559,6 +559,22 @@ button.pill { cursor: pointer; }
   flex: none;
 }
 .check-block { display: flex; flex-direction: column; gap: 6px; padding-top: 12px; border-top: 1px solid #eef0f4; }
+.check-switch { margin-top: 2px; padding-top: 12px; border-top: 1px solid #eef0f4; }
+.check-edit textarea {
+  width: 100%;
+  border: 0;
+  resize: vertical;
+  min-height: 44px;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 20px;
+  color: inherit;
+}
+.check-edit textarea::placeholder { color: #b4b8c5; font-weight: 500; }
+.check-edit textarea:focus { outline: none; }
 .check-title { font-size: 18px; }
 .check-tag {
   border-radius: 999px;
