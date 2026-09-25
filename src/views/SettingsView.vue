@@ -2,10 +2,12 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ApiError, getApi } from '@/api'
+import badgeIcon from '@/assets/onboarding/badge.svg'
 import type { SphereId } from '@/api/types'
 import { useGamificationStore } from '@/stores/gamification'
 import { useSessionStore } from '@/stores/session'
 import { closeMiniApp, useTelegramButtons } from '@/telegram'
+import chevronLight from '@/assets/onboarding/chevron-light.svg'
 
 const spheres: { id: SphereId; title: string }[] = [
   { id: 'procurement', title: 'Закупки' },
@@ -73,9 +75,9 @@ function onToggle() {
     <p class="muted">{{ session.account?.is_guest ? 'Гостевой аккаунт' : (session.login.startsWith('tg:') ? (session.account?.display_name || 'Telegram') : session.login) }}</p>
     <form class="stack card" @submit.prevent="save">
       <label class="field">Имя<input v-model="name" /></label>
-      <div class="row" style="flex-wrap: wrap">
+      <!-- <div class="row" style="flex-wrap: wrap">
         <button v-for="sphere in spheres" :key="sphere.id" type="button" class="chip" :class="{ on: selected.includes(sphere.id) }" @click="toggle(sphere.id)">{{ sphere.title }}</button>
-      </div>
+      </div> -->
       <button class="btn tg-hide" type="submit">Сохранить</button>
     </form>
     <section v-if="gamification.allowed" class="card row" style="justify-content: space-between">
@@ -84,6 +86,11 @@ function onToggle() {
         <p class="muted">Бейджи на итогах и в разборе</p>
       </div>
       <button class="toggle" :class="{ on: gamification.enabled }" type="button" @click="onToggle"><i /></button>
+    <button class="btn home-call tg-hide" type="button" @click="router.push('/peaks')">
+      <img class="settings-badge" :src="badgeIcon" alt="" width="16" height="16" />
+      <span>Посмотреть бейджи</span>
+      <img :src="chevronLight" alt="" width="20" height="22" />
+    </button>  
     </section>
     <form v-if="session.account?.is_guest" class="card stack" @submit.prevent="upgrade">
       <h2>Стать постоянным</h2>
