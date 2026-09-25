@@ -82,9 +82,11 @@ async function openReview() {
       <img :src="chevron" alt="" width="20" height="22" />
     </button>
     <p v-if="error" class="error">{{ error }}</p>
-    <button class="card row" type="button" @click="openReview">
+    <!-- <button class="card row" type="button" @click="openReview"> -->
+      <p class="card row">
       <img :src="chartCard" alt="" width="22" height="22" />
       <span><b>Здесь будет твой разбор</b><span class="muted" style="display: block">Появится после первого общения</span></span>
-    </button>
+    </p>
+    <!-- </button> -->
   </main>
 </template>
