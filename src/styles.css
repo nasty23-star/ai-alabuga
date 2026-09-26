@@ -814,6 +814,38 @@ h2.glossary-section { font-size: 16px; font-weight: 700; }
   background: #22c55e;
   flex: none;
 }
+.glossary-section i.planned {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px #d4d4d8;
+}
+.progress-growth {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: #fff;
+  border-radius: 22px;
+  padding: 18px 20px 20px;
+  box-shadow: 0 8px 10px rgb(30 64 175 / 8%);
+}
+.progress-chart { margin: 6px 0 14px; }
+.progress-growth b { font-size: 16px; line-height: 22px; }
+.progress-growth .muted { margin-top: 6px; }
+.progress-start { width: auto; height: 44px; margin-top: 16px; padding: 0 18px; font-size: 15px; }
+.progress-metrics {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: 0;
+  background: #fff;
+  border-radius: 22px;
+  padding: 16px;
+  text-align: left;
+  box-shadow: 0 8px 10px rgb(30 64 175 / 8%);
+}
+.progress-metrics b { display: block; font-size: 16px; line-height: 20px; }
+.progress-metrics .muted { display: block; }
 h2.glossary-section.planned { font-weight: 700; }
 .glossary-card.card { margin-bottom: 0; padding: 4px 16px; }
 .glossary-row {
