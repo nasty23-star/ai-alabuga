@@ -78,7 +78,7 @@ function onToggle() {
       <!-- <div class="row" style="flex-wrap: wrap">
         <button v-for="sphere in spheres" :key="sphere.id" type="button" class="chip" :class="{ on: selected.includes(sphere.id) }" @click="toggle(sphere.id)">{{ sphere.title }}</button>
       </div> -->
-      <button class="btn tg-hide" type="submit">Сохранить</button>
+      <!-- <button class="btn tg-hide" type="submit">Сохранить</button> -->
     </form>
     <section v-if="gamification.allowed" class="card row" style="justify-content: space-between">
       <div>
