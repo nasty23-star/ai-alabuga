@@ -57,15 +57,15 @@ function back() {
   else if (slide.value > 0) slide.value -= 1
 }
 
-useTelegramButtons(() => ({
-  main: {
-    text: 'Далее',
-    enabled: !pending.value,
-    progress: pending.value,
-    onClick: () => { if (slide.value === 99) void save(); else next() },
-  },
-  back: slide.value > 0 ? back : null,
-}))
+// useTelegramButtons(() => ({
+//   main: {
+//     text: 'Далее',
+//     enabled: !pending.value,
+//     progress: pending.value,
+//     onClick: () => { if (slide.value === 99) void save(); else next() },
+//   },
+//   back: slide.value > 0 ? back : null,
+// }))
 </script>
 
 <template>

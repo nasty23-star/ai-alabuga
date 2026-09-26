@@ -23,10 +23,10 @@ import { useTelegramButtons } from '@/telegram'
 
 const router = useRouter()
 
-useTelegramButtons(() => ({
-  main: { text: 'Новое общение', onClick: () => { void router.push('/scenarios/pick') } },
-  back: null,
-}))
+// useTelegramButtons(() => ({
+//   main: { text: 'Новое общение', onClick: () => { void router.push('/scenarios/pick') } },
+//   back: null,
+// }))
 const session = useSessionStore()
 const gamification = useGamificationStore()
 const history = ref<NegotiationListItem[]>([])

@@ -29,10 +29,10 @@ const message = ref('')
 
 onMounted(() => gamification.hydrate())
 
-useTelegramButtons(() => ({
-  main: { text: 'Сохранить', onClick: () => { void save() } },
-  back: null,
-}))
+// useTelegramButtons(() => ({
+//   main: { text: 'Сохранить', onClick: () => { void save() } },
+//   back: null,
+// }))
 
 function toggle(id: SphereId) {
   selected.value = selected.value.includes(id) ? selected.value.filter((item) => item !== id) : [...selected.value, id]
