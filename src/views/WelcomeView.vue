@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import flag from '@/assets/onboarding/flag.svg'
-import flagPole from '@/assets/onboarding/flag-pole.svg'
 import peaks from '@/assets/onboarding/peaks.svg'
-import snow from '@/assets/onboarding/snow.svg'
-import { useTelegramButtons } from '@/telegram'
 
 const router = useRouter()
 
@@ -12,20 +8,17 @@ function practice() {
   void router.push('/history')
 }
 
-useTelegramButtons(() => ({ main: { text: 'Тренироваться', onClick: practice }, back: null }))
+// useTelegramButtons(() => ({ main: { text: 'Тренироваться', onClick: practice }, back: null }))
 </script>
 
 <template>
-  <main class="screen bare welcome">
-    <div class="welcome-sky hero-sky">
+  <main class="screen bare bg-hero hero-sky">
+    <div class="welcome-sky ">
       <h1>С возвращением!</h1>
-      <img class="welcome-peaks" :src="peaks" alt="" />
-      <img class="welcome-snow" :src="snow" alt="" />
-      <img class="welcome-pole" :src="flagPole" alt="" />
-      <img class="welcome-flag" :src="flag" alt="" />
+      <img class="bg-peaks" :src="peaks" alt="" />
     </div>
-    <div class="welcome-action">
-      <button class="btn tg-hide" type="button" @click="practice">Тренироваться</button>
-    </div>
+    <button class="btn tg-hide btn-cta" type="button" @click="practice">Тренироваться</button>
+    <!-- <div class="welcome-action"> -->
+    <!-- </div> -->
   </main>
 </template>
