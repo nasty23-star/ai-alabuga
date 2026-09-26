@@ -44,6 +44,9 @@ img { display: block; }
   gap: 12px;
   background: linear-gradient(rgb(212, 226, 253) 0%, rgb(236, 241, 252) 31%, rgb(245, 247, 252) 62%);
 }
+.scenario {
+  background: rgb(245 247 252 / 62%)
+}
 
 .screen.bare { padding-bottom: 28px; }
 
@@ -84,6 +87,13 @@ h2 { font-size: 18px; font-weight: 700; }
 }
 .field textarea { min-height: 88px; resize: vertical; }
 .field input:focus, .field textarea:focus, .field select:focus { outline: none; box-shadow: inset 0 0 0 1px var(--blue); }
+.wizard-goal textarea {
+  border-radius: 16px;
+  box-shadow: 0 8px 10px rgb(30 64 175 / 8%);
+}
+.wizard-goal textarea:focus {
+  box-shadow: 0 8px 10px rgb(30 64 175 / 8%), inset 0 0 0 1px var(--blue);
+}
 
 .card {
   background: #fff;
@@ -334,11 +344,31 @@ h2 { font-size: 18px; font-weight: 700; }
 }
 .composer .btn { width: auto; padding: 0 18px; }
 
+.header-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgb(245 247 252);
+  margin: 0 -16px;
+  padding: 0 16px;
+}
 .error { color: #dc2626; font-size: 13px; }
-.pick-head { display: grid; grid-template-columns: 42px 1fr 42px; align-items: center; }
+.pick-head { display: grid; grid-template-columns: 42px 1fr 42px; align-items: center; height: 52px; z-index: 1; }
 .pick-head b { text-align: center; font-size: 16px; }
-.step-bar { height: 4px; border-radius: 999px; background: #e4e7ee; overflow: hidden; }
-.step-bar span { display: block; height: 100%; border-radius: inherit; background: var(--blue); }
+.step-bar { display: flex; gap: 6px; height: 4px; }
+.step-bar span { flex: 1; height: 4px; border-radius: 999px; background: #e4e7ee; }
+.step-bar span.is-on { background: var(--blue); }
+.wizard-scenario { display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 22px; padding: 14px 12px 14px 14px; text-align: left; box-shadow: 0 8px 10px rgb(30 64 175 / 8%); }
+.wizard-switch {
+  margin-left: auto;
+  border: 0;
+  background: none;
+  padding: 8px 0;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  flex: none;
+}
 .pick-card {
   display: flex;
   align-items: center;

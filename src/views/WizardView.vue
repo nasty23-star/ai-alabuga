@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import backIcon from '@/assets/onboarding/back.svg'
 import { ApiError, explainApiError, getApi } from '@/api'
+import { scenarioIcon } from '@/scenarioIcons'
 import { scenarioVariant } from '@/scenarios'
 import { useSessionStore } from '@/stores/session'
 import { useTelegramButtons } from '@/telegram'
@@ -464,23 +465,32 @@ async function start() {
     <button class="btn" type="button" :disabled="pending" @click="saveProfile">Сохранить собеседника</button>
   </main>
 
-  <main v-else class="screen">
-    <header class="pick-head">
+  <main v-else class="screen bare scenario">
+    <header class="header-sticky">
+    <div class="pick-head">
       <button class="back" type="button" @click="back"><img :src="backIcon" alt="" width="20" height="20" /></button>
       <b>Шаг {{ step + 1 }} из {{ titles.length }}</b>
       <button class="back" type="button" aria-label="Закрыть" @click="closeWizard">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
       </button>
-    </header>
-    <div class="step-bar" role="progressbar" :aria-valuenow="step + 1" aria-valuemin="1" :aria-valuemax="titles.length" :aria-label="`Шаг ${step + 1} из ${titles.length}`">
-      <span :style="{ width: `${((step + 1) / titles.length) * 100}%` }" />
     </div>
-    <h1>{{ card?.theme_title }}</h1>
-    <p v-if="card" class="muted">{{ card.seat }}. {{ card.context }}</p>
+    <div class="step-bar" role="progressbar" :aria-valuenow="step + 1" aria-valuemin="1" :aria-valuemax="titles.length" :aria-label="`Шаг ${step + 1} из ${titles.length}`">
+      <span v-for="(title, index) in titles" :key="title" :class="{ 'is-on': index <= step }" />
+    </div>
+    </header>
+    <h1>{{ titles[step] }}</h1>
+    <div v-if="step === 0 && card" class="wizard-scenario">
+      <span class="pick-icon" :style="{ background: scenarioIcon(card.theme).bg, color: scenarioIcon(card.theme).color }" v-html="scenarioIcon(card.theme).svg" />
+      <span class="pick-copy">
+        <span class="muted">Сценарий</span>
+        <b>{{ card.theme_title }}</b>
+      </span>
+      <button class="wizard-switch" type="button" @click="closeWizard">Сменить</button>
+    </div>
     <p v-if="error" class="error">{{ error }}</p>
 
     <section v-if="step === 0" class="stack">
-      <label class="field">Цель переговоров<textarea v-model="goal" required /></label>
+      <label class="field wizard-goal" for="negotiation-goal">Цель одной фразой<textarea id="negotiation-goal" name="goal" v-model="goal" required placeholder="Опишите цель переговоров одной фразой" /></label>
     </section>
 
     <section v-else-if="step === 1" class="stack">
@@ -526,13 +536,9 @@ async function start() {
       </button>
     </section>
 
-    <div class="row">
-      <button v-if="pickingPersona" class="btn" type="button" @click="backToScenario">К сценарию</button>
-      <template v-else>
-        <button v-if="step > 0" class="btn ghost" type="button" @click="step -= 1">Назад</button>
-        <button v-if="step < 3" class="btn tg-hide" type="button" @click="step += 1">Далее</button>
-        <button v-else class="btn tg-hide" type="button" :disabled="pending" @click="start">Начать</button>
-      </template>
+    <div class="row btn-actions">
+      <button v-if="step < 3" class="btn tg-hide" type="button" @click="step += 1">Далее</button>
+      <button v-else class="btn tg-hide" type="button" :disabled="pending" @click="start">Начать</button>
     </div>
   </main>
 </template>
