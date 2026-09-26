@@ -86,7 +86,7 @@ function onToggle() {
         <p class="muted">Бейджи на итогах и в разборе</p>
       </div>
       <button class="toggle" :class="{ on: gamification.enabled }" type="button" @click="onToggle"><i /></button>
-    <button class="btn home-call tg-hide" type="button" @click="router.push('/peaks')">
+    <button button :class="['btn', 'home-call', 'tg-hide', { 'd-none': !gamification.enabled }]" type="button" @click="router.push('/peaks')">
       <img class="settings-badge" :src="badgeIcon" alt="" width="16" height="16" />
       <span>Посмотреть бейджи</span>
       <img :src="chevronLight" alt="" width="20" height="22" />

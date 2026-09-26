@@ -850,3 +850,8 @@ h2.glossary-section.planned { font-weight: 700; }
 .field input {
   margin-bottom: 12px;
 }
+
+.d-none {
+  display: none !important;
+  transition: 1s ease-in-out;
+}
