@@ -140,7 +140,7 @@ const THEMES: ThemeSeed[] = [
 ]
 
 const STOCK: Persona[] = [
-  { id: 'toxic_cpo', name: 'Токсичная CPO', tagline: 'давит и перебивает' },
+  { id: 'toxic_cpo', name: 'Токсичный CPO', tagline: 'давит и перебивает' },
   { id: 'busy_ceo', name: 'Занятой CEO', tagline: 'цифры и итог' },
 ]
 
