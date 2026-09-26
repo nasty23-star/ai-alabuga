@@ -486,19 +486,6 @@ useTelegramButtons(() => {
         <p v-for="item in glossaryDerived" :key="item.title"><b>{{ item.title }}</b> — {{ item.text }}</p>
       </article>
 
-      <section v-if="glossaryPlanned.length" class="glossary-block">
-        <h2 class="glossary-section planned">В разработке</h2>
-        <article class="card glossary-card planned">
-          <div v-for="item in glossaryPlanned" :key="item.en" class="glossary-row">
-            <i />
-            <div>
-              <b>{{ item.title }}</b>
-              <p class="en">{{ item.en }}</p>
-            </div>
-          </div>
-        </article>
-      </section>
-
       <p v-if="glossaryEmpty" class="muted">Ничего не нашлось</p>
     </template>
 
