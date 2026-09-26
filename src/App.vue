@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import navBell from '@/assets/onboarding/nav-bell.svg?raw'
+import navUser from '@/assets/onboarding/nav-user.svg?raw'
 import navChart from '@/assets/onboarding/nav-chart.svg?raw'
 import navFile from '@/assets/onboarding/nav-file.svg?raw'
 import navHome from '@/assets/onboarding/nav-home.svg?raw'
@@ -23,7 +23,7 @@ const navItems = [
   { to: '/scenarios', label: 'Сценарии', icon: navHome, match: ['scenarios', 'pick'] },
   { to: '/history', label: 'История', icon: navFile, match: ['history', 'debrief', 'peaks'] },
   { to: '/progress', label: 'Прогресс', icon: navChart, match: ['progress', 'glossary'] },
-  { to: '/settings', label: 'Профиль', icon: navBell, match: ['settings'] },
+  { to: '/settings', label: 'Профиль', icon: navUser, match: ['settings'] },
 ]
 
 function navActive(match: string[]) {
