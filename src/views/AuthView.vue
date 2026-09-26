@@ -53,13 +53,13 @@ async function run(action: () => Promise<void>) {
 <template>
   <main v-if="fromTelegram" class="screen bare" />
 
-  <main v-else-if="step === 'hero'" class="screen bare auth-hero hero-sky">
+  <main v-else-if="step === 'hero'" class="screen bare bg-hero hero-sky">
     <div class="auth-copy">
       <h1>В переговорах тоже берут высоту</h1>
       <p class="body">Тренируйся с ИИ-собеседниками<br>и поднимайся выше с каждой сделкой</p>
     </div>
-    <img class="auth-peaks" :src="peaks" alt="" />
-    <button class="btn tg-hide auth-cta" type="button" @click="step = 'form'">Начать восхождение</button>
+    <img class="bg-peaks" :src="peaks" alt="" />
+    <button class="btn tg-hide btn-cta" type="button" @click="step = 'form'">Начать восхождение</button>
   </main>
 
   <main v-else class="screen bare auth-form">
