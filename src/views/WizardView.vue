@@ -2,6 +2,10 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import backIcon from '@/assets/onboarding/back.svg'
+import chevron from '@/assets/onboarding/chevron.svg'
+import personaSpark from '@/assets/onboarding/persona-spark.svg'
+import personaCpo from '@/assets/onboarding/persona-toxic-cpo.png'
+import personaCeo from '@/assets/onboarding/persona-busy-ceo.png'
 import { ApiError, explainApiError, getApi } from '@/api'
 import { scenarioIcon } from '@/scenarioIcons'
 import { scenarioVariant } from '@/scenarios'
@@ -45,7 +49,13 @@ const talkativeness = ref(15)
 const phraseDraft = ref('')
 const addingPhrase = ref(false)
 
-const titles = ['Цель', 'Условия', 'Заметки', 'Собеседник']
+const titles = ['Цель', 'Условия сделки', 'Если не договоритесь?', 'Что известно?', 'Собеседник', 'Проверь сценарий']
+const editingFromReview = ref(false)
+const weights: { id: Weight; label: string }[] = [
+  { id: 'low', label: 'низкая' },
+  { id: 'medium', label: 'средняя' },
+  { id: 'high', label: 'высокая' },
+]
 
 function typeOf(id: string) {
   return issueTypes.value.find((item) => item.id === id)
@@ -77,6 +87,26 @@ onMounted(async () => {
   }
 })
 
+function unitLabel(unit: string | undefined) {
+  if (!unit) return ''
+  return unit === '%' || unit.startsWith('₽') ? unit : ` ${unit}`
+}
+
+function typeChoices(current: string) {
+  const used = new Set(issues.value.map((issue) => issue.type_id))
+  return issueTypes.value.filter((type) => type.id === current || !used.has(type.id))
+}
+
+function onIssueType(issue: IssueDraft) {
+  const type = typeOf(issue.type_id)
+  if (!type) return
+  const [min, max] = type.range
+  const inside = issue.reservation >= min && issue.reservation <= max && issue.ideal >= min && issue.ideal <= max
+  if (inside && issue.reservation !== issue.ideal) return
+  issue.reservation = min
+  issue.ideal = Math.min(max, min + 1)
+}
+
 function addIssue() {
   const used = new Set(issues.value.map((issue) => issue.type_id))
   const next = issueTypes.value.find((item) => !used.has(item.id))
@@ -87,6 +117,25 @@ function addIssue() {
     ideal: Math.min(next.range[1], next.range[0] + 1),
     weight: 'medium',
   })
+}
+
+function issuesHint(): string {
+  if (issues.value.length < 2) return 'Нужно хотя бы два условия'
+  if (issues.value.length > 4) return 'Не больше четырёх условий'
+  const seen = new Set<string>()
+  for (const issue of issues.value) {
+    const type = typeOf(issue.type_id)
+    if (!type) return 'Неизвестное условие'
+    if (seen.has(issue.type_id)) return 'Каждое условие можно указать только один раз'
+    seen.add(issue.type_id)
+    if (!Number.isFinite(issue.reservation) || !Number.isFinite(issue.ideal)) return `У «${type.name}» укажите границу и идеал`
+    if (issue.reservation === issue.ideal) return `У «${type.name}» граница и идеал не должны совпадать`
+    const [min, max] = type.range
+    if (issue.reservation < min || issue.reservation > max || issue.ideal < min || issue.ideal > max) {
+      return `У «${type.name}» значения должны быть от ${min} до ${max}`
+    }
+  }
+  return ''
 }
 
 function applyProfile(saved: CounterpartProfile) {
@@ -181,6 +230,14 @@ function letters(name: string) {
 const initials = computed(() => letters(profile.display_name))
 
 const selectedPersona = computed(() => personas.value.find((persona) => persona.id === personaId.value))
+const personaRows = computed(() => [
+  ...personas.value.filter((persona) => persona.id === 'custom'),
+  ...personas.value.filter((persona) => persona.id !== 'custom'),
+])
+const personaAvatars: Record<string, string> = {
+  toxic_cpo: personaCpo,
+  busy_ceo: personaCeo,
+}
 
 const counterpartName = computed(() => (
   personaId.value === 'custom'
@@ -211,8 +268,22 @@ function changePersona() {
   pickingPersona.value = true
   customOpen.value = false
   review.value = null
-  step.value = 3
+  editingFromReview.value = false
+  step.value = titles.indexOf('Собеседник')
 }
+
+function editFromReview(index: number) {
+  error.value = ''
+  editingFromReview.value = true
+  step.value = index
+}
+
+const issuesLine = computed(() => issues.value.map((issue, index) => {
+  const type = typeOf(issue.type_id)
+  const name = type?.name ?? issue.type_id
+  const label = index === 0 ? name : name.toLowerCase()
+  return `${label} ${issue.reservation}–${issue.ideal}${unitLabel(type?.unit)}`
+}).join(' · '))
 
 function backToScenario() {
   pickingPersona.value = false
@@ -246,22 +317,39 @@ useTelegramButtons(() => {
     }
   : {
       main: {
-        text: step.value < 3 ? 'Далее' : 'Начать',
+        text: step.value < titles.length - 1 ? (editingFromReview.value ? 'К проверке' : 'Далее') : 'Начать созвон',
         enabled: !pending.value,
         progress: pending.value,
-        onClick: () => { if (step.value < 3) step.value += 1; else void start() },
+        onClick: nextStep,
       },
       back,
     }
 })
 
 function startHint(): string {
-  const need: string[] = []
-  if (!chosenId.value) need.push('сценарий')
-  if (!(goal.value || '').trim()) need.push('цель переговоров')
-  if (!(batna.value || '').trim()) need.push('альтернативу — что будете делать, если не договоритесь')
-  if (!need.length) return ''
-  return `Нужно ещё указать: ${need.join(' и ')}`
+  if (!(goal.value || '').trim()) return 'Нужно указать цель переговоров'
+  const issuesProblem = issuesHint()
+  if (issuesProblem) return issuesProblem
+  if (!(batna.value || '').trim()) return 'Нужно указать, что будете делать, если не договоритесь'
+  return ''
+}
+
+function nextStep() {
+  error.value = ''
+  if (step.value === 1) {
+    const hint = issuesHint()
+    if (hint) {
+      error.value = hint
+      return
+    }
+  }
+  if (editingFromReview.value) {
+    editingFromReview.value = false
+    step.value = titles.length - 1
+    return
+  }
+  if (step.value < titles.length - 1) step.value += 1
+  else void start()
 }
 
 async function applyScenario(id: string, replace: boolean) {
@@ -274,6 +362,7 @@ async function applyScenario(id: string, replace: boolean) {
     review.value = null
     pickingPersona.value = false
     customOpen.value = false
+    editingFromReview.value = false
   }
   if (replace || !(goal.value || '').trim()) goal.value = next.defaults.goal || ''
   if (replace || !(batna.value || '').trim()) batna.value = next.defaults.batna?.text || ''
@@ -487,6 +576,7 @@ async function start() {
       </span>
       <button class="wizard-switch" type="button" @click="closeWizard">Сменить</button>
     </div>
+    <p v-if="step === 2" class="muted">Твой план Б. Ниже него соглашаться нет смысла.</p>
     <p v-if="error" class="error">{{ error }}</p>
 
     <section v-if="step === 0" class="stack">
@@ -494,51 +584,109 @@ async function start() {
     </section>
 
     <section v-else-if="step === 1" class="stack">
-      <article v-for="(issue, index) in issues" :key="index" class="card stack">
-        <label class="field">Условие
-          <select v-model="issue.type_id">
-            <option v-for="type in issueTypes" :key="type.id" :value="type.id">{{ type.name }}, {{ type.unit }}</option>
+      <article v-for="(issue, index) in issues" :key="index" class="deal-card">
+        <div class="deal-head">
+          <select class="deal-title" :name="`issue-type-${index}`" v-model="issue.type_id" @change="onIssueType(issue)">
+            <option v-for="type in typeChoices(issue.type_id)" :key="type.id" :value="type.id">{{ type.name }}</option>
           </select>
-        </label>
-        <div class="row">
-          <label class="field">Граница<input v-model.number="issue.reservation" type="number" :min="typeOf(issue.type_id)?.range[0]" :max="typeOf(issue.type_id)?.range[1]" /></label>
-          <label class="field">Идеал<input v-model.number="issue.ideal" type="number" :min="typeOf(issue.type_id)?.range[0]" :max="typeOf(issue.type_id)?.range[1]" /></label>
+          <button v-if="issues.length > 2" class="wizard-switch" type="button" @click="issues.splice(index, 1)">Убрать</button>
         </div>
-        <label class="field">Вес
-          <select v-model="issue.weight">
-            <option value="low">Низкий</option>
-            <option value="medium">Средний</option>
-            <option value="high">Высокий</option>
-          </select>
-        </label>
-        <button v-if="issues.length > 2" class="btn danger" type="button" @click="issues.splice(index, 1)">Убрать</button>
+        <div class="deal-pair">
+          <label :for="`reservation-${index}`">Граница
+            <span class="deal-input">
+              <input :id="`reservation-${index}`" :name="`reservation-${index}`" v-model.number="issue.reservation" type="number" inputmode="numeric" :min="typeOf(issue.type_id)?.range[0]" :max="typeOf(issue.type_id)?.range[1]" />
+              <span>{{ unitLabel(typeOf(issue.type_id)?.unit) }}</span>
+            </span>
+          </label>
+          <label :for="`ideal-${index}`">Идеал
+            <span class="deal-input">
+              <input :id="`ideal-${index}`" :name="`ideal-${index}`" v-model.number="issue.ideal" type="number" inputmode="numeric" :min="typeOf(issue.type_id)?.range[0]" :max="typeOf(issue.type_id)?.range[1]" />
+              <span>{{ unitLabel(typeOf(issue.type_id)?.unit) }}</span>
+            </span>
+          </label>
+        </div>
+        <div class="deal-weight">
+          <span>Важность</span>
+          <div class="deal-pills">
+            <button v-for="item in weights" :key="item.id" type="button" :class="{ on: issue.weight === item.id }" @click="issue.weight = item.id">{{ item.label }}</button>
+          </div>
+        </div>
       </article>
       <button v-if="issues.length < 4" class="btn ghost" type="button" @click="addIssue">Добавить условие</button>
     </section>
 
     <section v-else-if="step === 2" class="stack">
-      <label class="field">Альтернатива (BATNA)<textarea v-model="batna" /></label>
-      <label class="field">Заметка о собеседнике<textarea v-model="note" /></label>
-      <label class="field">Свои ограничения<textarea v-model="constraints" /></label>
+      <label class="field wizard-goal"><textarea id="batna" name="batna" v-model="batna" required placeholder="Что будете делать, если не договоритесь" aria-label="План Б" /></label>
     </section>
 
-    <section v-else class="stack">
+    <section v-else-if="step === 3" class="stack">
+      <label class="field wizard-goal" for="counterpart-note">О собеседнике<textarea id="counterpart-note" name="counterpart_note" v-model="note" placeholder="Что уже известно о собеседнике" /></label>
+      <label class="field wizard-goal" for="own-constraints">Твои ограничения<textarea id="own-constraints" name="own_constraints" v-model="constraints" placeholder="Чего нельзя нарушить" /></label>
+    </section>
+
+    <section v-else-if="step === 4" class="persona-list">
       <button
-        v-for="persona in personas"
+        v-for="persona in personaRows"
         :key="persona.id"
         type="button"
-        class="card"
-        :style="personaId === persona.id ? 'outline: 2px solid var(--blue)' : ''"
+        class="card persona-card"
+        :class="{ 'is-custom': persona.id === 'custom', 'is-on': persona.id !== 'custom' && personaId === persona.id }"
         @click="persona.id === 'custom' ? openCustom() : (personaId = persona.id)"
       >
-        <b>{{ persona.name }}</b>
-        <p class="muted">{{ persona.tagline }}</p>
+        <span v-if="persona.id === 'custom'" class="home-own-icon" aria-hidden="true">
+          <img :src="personaSpark" alt="" width="22" height="22" />
+        </span>
+        <img v-else-if="personaAvatars[persona.id]" class="persona-avatar" :src="personaAvatars[persona.id]" alt="" width="44" height="44" />
+        <span v-else class="persona-avatar persona-fallback" aria-hidden="true">{{ letters(persona.name) }}</span>
+        <span class="persona-copy">
+          <b>{{ persona.name }}</b>
+          <span class="muted">{{ persona.tagline }}</span>
+        </span>
+        <img v-if="persona.id === 'custom'" :src="chevron" alt="" width="20" height="22" />
+        <svg v-else-if="personaId === persona.id" class="persona-mark" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="11" fill="#1a5cff" />
+          <path d="M7.4 12.2 10.4 15.2 16.6 8.8" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <svg v-else class="persona-mark" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="9.2" stroke="#D4D4D8" stroke-width="1.6" />
+        </svg>
+      </button>
+    </section>
+
+    <section v-else class="scenario-review">
+      <button class="review-row" type="button" @click="editFromReview(0)">
+        <span>
+          <span class="muted">Цель</span>
+          <b>{{ goal || 'Не указана' }}</b>
+        </span>
+        <span class="review-edit">Изм.</span>
+      </button>
+      <button class="review-row" type="button" @click="editFromReview(1)">
+        <span>
+          <span class="muted">Условия</span>
+          <b>{{ issuesLine || 'Не заданы' }}</b>
+        </span>
+        <span class="review-edit">Изм.</span>
+      </button>
+      <button class="review-row" type="button" @click="editFromReview(2)">
+        <span>
+          <span class="muted">План Б</span>
+          <b>{{ batna || 'Не указан' }}</b>
+        </span>
+        <span class="review-edit">Изм.</span>
+      </button>
+      <button class="review-row" type="button" @click="editFromReview(4)">
+        <span>
+          <span class="muted">Собеседник</span>
+          <b>{{ counterpartName }}</b>
+        </span>
+        <span class="review-edit">Изм.</span>
       </button>
     </section>
 
     <div class="row btn-actions">
-      <button v-if="step < 3" class="btn tg-hide" type="button" @click="step += 1">Далее</button>
-      <button v-else class="btn tg-hide" type="button" :disabled="pending" @click="start">Начать</button>
+      <button v-if="step < titles.length - 1" class="btn tg-hide" type="button" @click="nextStep">{{ editingFromReview ? 'К проверке' : 'Далее' }}</button>
+      <button v-else class="btn tg-hide" type="button" :disabled="pending" @click="start">Начать общение</button>
     </div>
   </main>
 </template>

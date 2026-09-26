@@ -75,7 +75,7 @@ useTelegramButtons(() => ({
     <section class="sky" style="height: 380px; border-radius: 37px; position: relative; overflow: hidden">
       <article class="card" style="position: absolute; top: 76px; left: 28px; width: 250px; display: flex; gap: 12px; align-items: center">
         <span style="width: 50px; height: 50px; border-radius: 50%; background: #8fb0e8" />
-        <span><b style="font-size: 13px">Токсичная CPO</b><span class="muted" style="display: block">давит и перебивает</span></span>
+        <span><b style="font-size: 13px">Токсичный CPO</b><span class="muted" style="display: block">давит и перебивает</span></span>
       </article>
       <article class="card" style="position: absolute; top: 170px; left: 58px; width: 240px; display: flex; gap: 12px; align-items: center">
         <span style="width: 50px; height: 50px; border-radius: 50%; background: #5d7eb8" />
