@@ -108,9 +108,9 @@ onMounted(async () => {
     const [report, state] = await Promise.all([getApi().debrief(id.value), getApi().getNegotiation(id.value)])
     debrief.value = report
     negotiation.value = state
-    if (route.query.link === '1') {
+    if (route.query.link === '1' || route.query.links === '1') {
       step.value = 'links'
-      await ensureLink()
+      if (route.query.link === '1') await ensureLink()
     }
   } catch (caught) {
     error.value = caught instanceof ApiError ? caught.message : 'Разбор недоступен'
@@ -357,7 +357,7 @@ useTelegramButtons(() => {
     </template>
 
     <template v-else-if="step === 'links'">
-      <button class="back" type="button" @click="route.query.link === '1' ? router.push('/scenarios') : (sheet = true, step = 'summary')"><img :src="backIcon" alt="" width="20" height="20" /></button>
+      <button class="back" type="button" @click="route.query.links === '1' ? router.back() : route.query.link === '1' ? router.push('/scenarios') : (sheet = true, step = 'summary')"><img :src="backIcon" alt="" width="20" height="20" /></button>
       <h1>Ссылка на разбор</h1>
       <p class="muted">Руководитель увидит итог. Ссылка действует 24 часа.</p>
       <p v-if="!links.length" class="muted">Ссылок пока нет.</p>
