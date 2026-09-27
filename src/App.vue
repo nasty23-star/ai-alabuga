@@ -69,7 +69,7 @@ onMounted(async () => {
     <div class="phone">
       <SplashScreen v-if="booting" />
       <router-view />
-      <nav v-if="showNav" class="nav">
+      <nav v-if="showNav" class="nav" data-tour="menu">
         <router-link v-for="item in navItems" :key="item.to" :to="item.to" :class="{ 'is-active': navActive(item.match) }" :aria-current="navActive(item.match) ? 'page' : undefined">
           <span class="nav-icon" v-html="item.icon" />
           <span>{{ item.label }}</span>

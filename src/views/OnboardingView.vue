@@ -9,6 +9,7 @@ import micIcon from '@/assets/onboarding/mic.svg'
 import liteHills from '@/assets/onboarding/lite-hills.svg'
 import { ApiError } from '@/api'
 import type { SphereId } from '@/api/types'
+import { requestHomeTour } from '@/homeTour'
 import { useSessionStore } from '@/stores/session'
 import { useTelegramButtons } from '@/telegram'
 
@@ -43,6 +44,7 @@ async function save() {
   pending.value = true
   try {
     await session.saveProfile(name.value.trim() || 'Мистер X', selected.value)
+    requestHomeTour()
     await router.push('/scenarios')
   } catch (caught) {
     error.value = caught instanceof ApiError ? caught.message : 'Не удалось сохранить'
@@ -53,6 +55,7 @@ async function save() {
 
 function later() {
   session.skipOnboarding()
+  if (slide.value === 99) requestHomeTour()
   void router.push('/scenarios')
 }
 

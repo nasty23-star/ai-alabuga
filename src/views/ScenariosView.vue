@@ -6,6 +6,7 @@ import chartCard from '@/assets/onboarding/chart-card.svg'
 import chevron from '@/assets/onboarding/chevron.svg'
 import chevronLight from '@/assets/onboarding/chevron-light.svg'
 import flame from '@/assets/onboarding/flame.svg'
+import micLime from '@/assets/onboarding/mic-lime.svg'
 import logo from '@/assets/onboarding/logo.svg'
 import personaSpark from '@/assets/onboarding/persona-spark.svg'
 import peaksQuestionIcon from '@/assets/onboarding/peaks-question.png'
@@ -18,6 +19,8 @@ import { ApiError, getApi } from '@/api'
 import type { NegotiationListItem } from '@/api/types'
 import { collectPeaks } from '@/gamification/badges'
 import type { Peak } from '@/gamification/badges'
+import HomeTour from '@/components/HomeTour.vue'
+import { homeTourPending } from '@/homeTour'
 import { useGamificationStore } from '@/stores/gamification'
 import { useSessionStore } from '@/stores/session'
 import { useTelegramButtons } from '@/telegram'
@@ -32,6 +35,7 @@ const session = useSessionStore()
 const gamification = useGamificationStore()
 const history = ref<NegotiationListItem[]>([])
 const error = ref('')
+const showTour = ref(false)
 const peaks = computed(() => collectPeaks(history.value))
 const earned = computed(() => peaks.value.filter((item) => item.earned).length)
 const initial = computed(() => (session.account?.display_name?.trim()?.[0] ?? 'Я').toUpperCase())
@@ -49,6 +53,7 @@ function artOf(peak: Peak) {
 }
 
 onMounted(async () => {
+  showTour.value = homeTourPending()
   gamification.hydrate()
   try {
     if (gamification.active) history.value = (await getApi().listNegotiations(20, null)).items
@@ -87,11 +92,12 @@ async function openReview() {
     <!-- <div v-if="gamification.active" class="badges">
       <img v-for="peak in peaks" :key="peak.id" class="home-peak" :src="artOf(peak)" :alt="peak.title" width="64" height="64" />
     </div> -->
-    <button class="btn home-call tg-hide" type="button" @click="router.push('/scenarios/pick')">
-      <span>Новый созвон (пока текстом)</span>
-      <img :src="chevronLight" alt="" width="20" height="22" />
+    <button class="btn home-call is-primary tg-hide" data-tour="call" type="button" @click="router.push('/scenarios/pick')">
+      <span class="home-call-mic" aria-hidden="true"><img :src="micLime" alt="" width="21" height="21" /></span>
+      <span class="home-call-label">Новый созвон<br>(пока текстом)</span>
+      <img class="home-call-chevron" :src="chevronLight" alt="" width="20" height="22" />
     </button>
-    <button class="home-own" type="button" @click="router.push({ path: '/wizard', query: { persona: 'custom' } })">
+    <button class="home-own" data-tour="own" type="button" @click="router.push({ path: '/wizard', query: { persona: 'custom' } })">
       <span class="home-own-icon" aria-hidden="true">
         <img :src="personaSpark" alt="" width="24" height="24" />
       </span>
@@ -103,10 +109,11 @@ async function openReview() {
     </button>
     <p v-if="error" class="error">{{ error }}</p>
     <!-- <button class="card row" type="button" @click="openReview"> -->
-      <p class="card row">
+      <p class="card row" data-tour="review">
       <img :src="chartCard" alt="" width="22" height="22" />
-      <span><b>Здесь будет твой разбор</b><span class="muted" style="display: block">Появится после первого общения</span></span>
+      <span><b>Здесь будет твой разбор</b><span class="muted" style="display: block">Появится после первого созвона</span></span>
     </p>
     <!-- </button> -->
+    <HomeTour v-if="showTour" @done="showTour = false" />
   </main>
 </template>

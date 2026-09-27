@@ -561,6 +561,28 @@ h2 { font-size: 18px; font-weight: 700; }
   padding: 0 16px;
 }
 .home-call span { flex: 1; text-align: center; }
+.home-call.is-primary {
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  align-items: center;
+  height: 76px;
+  padding: 0 12px 0 10px;
+  gap: 0;
+}
+.home-call-mic {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #e5f6b4;
+  display: grid;
+  place-items: center;
+}
+.home-call-label {
+  font-weight: 700;
+  line-height: 20px;
+  letter-spacing: -0.2px;
+}
+.home-call-chevron { justify-self: end; }
 .settings-badge { filter: brightness(0) invert(1); }
 .home-own {
   display: flex;
