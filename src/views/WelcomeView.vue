@@ -5,7 +5,7 @@ import peaks from '@/assets/onboarding/peaks.svg'
 const router = useRouter()
 
 function practice() {
-  void router.push('/history')
+  void router.push('/scenarios')
 }
 
 // useTelegramButtons(() => ({ main: { text: 'Тренироваться', onClick: practice }, back: null }))
