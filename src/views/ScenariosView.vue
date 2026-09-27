@@ -7,6 +7,7 @@ import chevron from '@/assets/onboarding/chevron.svg'
 import chevronLight from '@/assets/onboarding/chevron-light.svg'
 import flame from '@/assets/onboarding/flame.svg'
 import logo from '@/assets/onboarding/logo.svg'
+import personaSpark from '@/assets/onboarding/persona-spark.svg'
 import peaksQuestionIcon from '@/assets/onboarding/peaks-question.png'
 import peaksVerholazIcon from '@/assets/onboarding/peaks-verholaz.png'
 import peaksKamnegryzIcon from '@/assets/onboarding/peaks-kamnegryz.png'
@@ -87,12 +88,12 @@ async function openReview() {
       <img v-for="peak in peaks" :key="peak.id" class="home-peak" :src="artOf(peak)" :alt="peak.title" width="64" height="64" />
     </div> -->
     <button class="btn home-call tg-hide" type="button" @click="router.push('/scenarios/pick')">
-      <span>Новое общение</span>
+      <span>Новый созвон (пока текстом)</span>
       <img :src="chevronLight" alt="" width="20" height="22" />
     </button>
     <button class="home-own" type="button" @click="router.push({ path: '/wizard', query: { persona: 'custom' } })">
       <span class="home-own-icon" aria-hidden="true">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 3.5v11M3.5 9h11" stroke="#fff" stroke-width="1.8" stroke-linecap="round" /></svg>
+        <img :src="personaSpark" alt="" width="24" height="24" />
       </span>
       <span class="pick-copy">
         <b>Свой собеседник</b>
