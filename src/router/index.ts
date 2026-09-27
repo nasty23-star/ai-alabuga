@@ -11,6 +11,7 @@ import PeaksView from '@/views/PeaksView.vue'
 import ScenarioPickView from '@/views/ScenarioPickView.vue'
 import ScenariosView from '@/views/ScenariosView.vue'
 import SettingsView from '@/views/SettingsView.vue'
+import SummitView from '@/views/SummitView.vue'
 import SharedView from '@/views/SharedView.vue'
 import WelcomeView from '@/views/WelcomeView.vue'
 import WizardView from '@/views/WizardView.vue'
@@ -32,6 +33,7 @@ const router = createRouter({
     { path: '/glossary', name: 'glossary', component: GlossaryView },
     { path: '/peaks', name: 'peaks', component: PeaksView },
     { path: '/settings', name: 'settings', component: SettingsView },
+    { path: '/summit', name: 'summit', component: SummitView, meta: { bare: true } },
     { path: '/s/:token', name: 'shared', component: SharedView, meta: { public: true, bare: true } },
   ],
 })

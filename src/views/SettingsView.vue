@@ -82,6 +82,10 @@ async function openLinks() {
         <span>Посмотреть бейджи</span>
         <img :src="chevronLight" alt="" width="20" height="22" />
       </button>
+      <button class="profile-link" type="button" @click="router.push({ name: 'summit' })">
+        <span>Посмотреть итоги</span>
+        <img :src="chevron" alt="" width="22" height="22" />
+      </button>
       <button class="profile-link" type="button" @click="openLinks">
         <span>Мои ссылки</span>
         <img :src="chevron" alt="" width="22" height="22" />
