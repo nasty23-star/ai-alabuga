@@ -49,7 +49,7 @@ const talkativeness = ref(15)
 const phraseDraft = ref('')
 const addingPhrase = ref(false)
 
-const titles = ['Цель', 'Условия сделки', 'Если не договоритесь?', 'Что известно?', 'Собеседник', 'Проверь сценарий']
+const titles = ['Цель', 'Условия сделки', 'Если не договоритесь?', 'Что известно?', 'С кем говорим?', 'Проверь сценарий']
 const editingFromReview = ref(false)
 const weights: { id: Weight; label: string }[] = [
   { id: 'low', label: 'низкая' },
