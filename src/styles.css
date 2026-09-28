@@ -428,8 +428,18 @@ h2 { font-size: 18px; font-weight: 700; }
   line-height: 1.4;
   white-space: pre-wrap;
 }
-.bubble.counterpart { background: #fff; border-bottom-left-radius: 6px; }
-.bubble.player { margin-left: auto; background: var(--blue); color: #fff; border-bottom-right-radius: 6px; }
+.bubble.counterpart { background: #fff; 
+  border-bottom-left-radius: 6px;
+  margin-bottom: 10px;
+  margin-top: 10px;
+ }
+.bubble.player { margin-left: auto;
+   background: var(--blue); 
+   color: #fff; 
+   border-bottom-right-radius: 6px;
+   margin-bottom: 10px;
+   margin-top: 10px;
+   }
 
 .composer {
   display: flex;

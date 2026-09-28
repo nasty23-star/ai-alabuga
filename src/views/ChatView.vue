@@ -127,6 +127,8 @@ function back() {
   closeWizard()
 }
 
+const reversedTurns = computed(() => [...(state.value?.turns ?? [])].reverse())
+
 onMounted(async () => {
   try {
     await load()
@@ -169,18 +171,19 @@ onMounted(async () => {
       </div>
     </header>
 
-    <div ref="scroller" class="stack" style="flex: 1; overflow: auto; min-height: 240px">
+    <div ref="scroller" class="stack" style="flex: 1; overflow: auto; min-height: 240px; flex-direction: column-reverse;">
+      <p 
+      v-if="thinking"
+      class="bubble counterpart">пишет…</p>
       <p
-        v-for="turn in state?.turns ?? []"
+        v-for="turn in reversedTurns ?? []"
         :key="`${turn.index}-${turn.speaker}`"
         class="bubble"
         :class="turn.speaker"
       >
         {{ turn.text }}
       </p>
-      <p 
       
-      class="bubble counterpart">пишет…</p>
       <p v-if="live" class="bubble counterpart">{{ live }}</p>
     </div>
 
