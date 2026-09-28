@@ -3,7 +3,14 @@ import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ApiError, getApi } from '@/api'
 import { useTelegramButtons } from '@/telegram'
+import backIcon from '@/assets/onboarding/back.svg'
+import replayIcon from '@/assets/onboarding/replay.png'
 import type { AgreedTerm, NegotiationState, TurnEvent } from '@/api/types'
+
+const props = defineProps<{
+  personaCeo?: string
+  personaCpo?: string
+}>()
 
 const route = useRoute()
 const router = useRouter()
@@ -17,6 +24,8 @@ const error = ref('')
 const deal = ref<{ terms: AgreedTerm[]; summary: string } | null>(null)
 const idempotencyKey = ref(crypto.randomUUID())
 const scroller = ref<HTMLElement | null>(null)
+
+const personaAvatar = computed(() => props.personaCeo || props.personaCpo || '')
 
 async function load() {
   state.value = await getApi().getNegotiation(id.value)
@@ -111,6 +120,14 @@ async function leave() {
   await router.push({ name: 'debrief', params: { id: id.value } })
 }
 
+function closeWizard() {
+  void router.push('/scenarios/pick')
+}
+
+function back() {
+  closeWizard()
+}
+
 // useTelegramButtons(() => ({
 //   main: deal.value
 //     ? { text: 'Принять', enabled: !pending.value, progress: pending.value, onClick: () => { void accept() } }
@@ -129,32 +146,75 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main class="screen" style="padding-bottom: 16px">
-    <header class="row" style="justify-content: space-between">
-      <div>
+  <main class="screen chat" style="padding-bottom: 16px">
+    <header class="header-sticky">
+      <div class="pick-header">
+        <button class="back" type="button" @click="back">
+          <img :src="backIcon" alt="" width="20" height="20" />
+        </button>
+       <span class="container">
+        <img
+          v-if="personaAvatar"
+          class="persona-avatar"
+          :src="personaAvatar"
+          alt=""
+          width="50"
+          height="50"
+        />
+        <span
+          v-else
+          class="persona-avatar persona-avatar--empty"
+          aria-hidden="true"
+        ></span>
+
         <b>{{ state?.counterpart.name }}</b>
-        <p class="muted">{{ state?.scenario.title }} · ходов {{ state?.turns_left ?? '—' }}</p>
+        </span>
+        <button class="back" type="button" aria-label="Закрыть" @click="closeWizard">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+        </button>
       </div>
-      <button class="btn ghost" type="button" style="width: auto; color: #dc2626" @click="leave">Уйти</button>
     </header>
+
     <div ref="scroller" class="stack" style="flex: 1; overflow: auto; min-height: 240px">
-      <p v-for="turn in state?.turns ?? []" :key="`${turn.index}-${turn.speaker}`" class="bubble" :class="turn.speaker">{{ turn.text }}</p>
-      <p v-if="thinking" class="bubble counterpart">Печатает…</p>
+      <p
+        v-for="turn in state?.turns ?? []"
+        :key="`${turn.index}-${turn.speaker}`"
+        class="bubble"
+        :class="turn.speaker"
+      >
+        {{ turn.text }}
+      </p>
+      <p 
+      
+      class="bubble counterpart">пишет…</p>
       <p v-if="live" class="bubble counterpart">{{ live }}</p>
     </div>
+
     <article v-if="deal" class="card stack">
       <b>Условия сошлись</b>
       <p class="muted">{{ deal.summary }}</p>
-      <p v-for="term in deal.terms" :key="term.type_id">{{ term.name }}: {{ term.value }} {{ term.unit }}</p>
+      <p v-for="term in deal.terms" :key="term.type_id">
+        {{ term.name }}: {{ term.value }} {{ term.unit }}
+      </p>
       <div class="row">
-        <button class="btn tg-hide" type="button" style="width: auto; padding: 0 18px" @click="accept">Принять</button>
+        <button class="btn tg-hide" type="button" style="width: auto; padding: 0 18px" @click="accept">
+          Принять
+        </button>
         <button class="btn ghost" type="button" @click="reject">К торгу</button>
       </div>
     </article>
+
     <p v-if="error" class="error">{{ error }}</p>
+
     <form class="composer" @submit.prevent="send">
-      <input v-model="draft" :maxlength="state?.limits.max_utterance_chars ?? 1200" placeholder="Ваша реплика" />
-      <button class="btn tg-hide" type="submit" :disabled="pending">Ход</button>
+      <input
+        v-model="draft"
+        :maxlength="state?.limits.max_utterance_chars ?? 1200"
+        placeholder="Ваша реплика..."
+      />
+      <button class="btn tg-hide" type="submit" :disabled="pending"><img :src="replayIcon" alt="Отправить" /></button>
     </form>
   </main>
 </template>
