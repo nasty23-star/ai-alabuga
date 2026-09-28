@@ -2,7 +2,6 @@
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ApiError, getApi } from '@/api'
-import { useTelegramButtons } from '@/telegram'
 import backIcon from '@/assets/onboarding/back.svg'
 import replayIcon from '@/assets/onboarding/replay.png'
 import type { AgreedTerm, NegotiationState, TurnEvent } from '@/api/types'
@@ -127,13 +126,6 @@ function closeWizard() {
 function back() {
   closeWizard()
 }
-
-// useTelegramButtons(() => ({
-//   main: deal.value
-//     ? { text: 'Принять', enabled: !pending.value, progress: pending.value, onClick: () => { void accept() } }
-//     : { text: 'Ход', enabled: !pending.value && draft.value.trim().length > 0, progress: pending.value, onClick: () => { void send() } },
-//   back: () => { void router.push('/scenarios') },
-// }))
 
 onMounted(async () => {
   try {
