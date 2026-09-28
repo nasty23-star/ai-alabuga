@@ -3,9 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ApiError, getApi } from '@/api'
 import backIcon from '@/assets/onboarding/back.svg'
-import badgeIcon from '@/assets/onboarding/badge.svg'
 import chevron from '@/assets/onboarding/chevron.svg'
-import chevronLight from '@/assets/onboarding/chevron-light.svg'
 import { useGamificationStore } from '@/stores/gamification'
 import { useSessionStore } from '@/stores/session'
 import { closeMiniApp } from '@/telegram'
@@ -77,15 +75,6 @@ async function openLinks() {
         </div>
         <button class="toggle" :class="{ on: gamification.enabled }" type="button" :aria-pressed="gamification.enabled" aria-label="Геймификация" @click="onToggle"><i /></button>
       </div>
-      <button v-if="gamification.enabled" class="btn home-call profile-badges" type="button" @click="router.push('/peaks')">
-        <img class="settings-badge" :src="badgeIcon" alt="" width="16" height="16" />
-        <span>Посмотреть бейджи</span>
-        <img :src="chevronLight" alt="" width="20" height="22" />
-      </button>
-      <button class="profile-link" type="button" @click="router.push({ name: 'summit' })">
-        <span>Посмотреть итоги</span>
-        <img :src="chevron" alt="" width="22" height="22" />
-      </button>
       <button class="profile-link" type="button" @click="openLinks">
         <span>Мои ссылки</span>
         <img :src="chevron" alt="" width="22" height="22" />
