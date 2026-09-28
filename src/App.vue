@@ -21,7 +21,7 @@ const bare = computed(() => Boolean(route.meta.bare))
 const showNav = computed(() => !booting.value && session.isAuthenticated && session.onboarded && !bare.value && route.name !== 'chat' && route.name !== 'wizard')
 const navItems = [
   { to: '/scenarios', label: 'Сценарии', icon: navHome, match: ['scenarios', 'pick'] },
-  { to: '/history', label: 'История', icon: navFile, match: ['history', 'debrief', 'peaks'] },
+  { to: '/history', label: 'Тренировки', icon: navFile, match: ['history', 'debrief', 'peaks'] },
   { to: '/progress', label: 'Прогресс', icon: navChart, match: ['progress', 'glossary'] },
   { to: '/settings', label: 'Профиль', icon: navUser, match: ['settings'] },
 ]
