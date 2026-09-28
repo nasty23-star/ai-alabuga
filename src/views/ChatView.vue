@@ -182,8 +182,8 @@ onMounted(async () => {
 
     <div ref="scroller" class="stack" style="flex: 1; overflow: auto; min-height: 240px; flex-direction: column-reverse;">
       <p 
-      v-if="thinking"
-      class="bubble counterpart">пишет…</p>
+      
+      class="bubble counterpart">{{state?.counterpart.name || 'Собеседник'}}…</p>
       <p
         v-for="turn in reversedTurns ?? []"
         :key="`${turn.index}-${turn.speaker}`"
