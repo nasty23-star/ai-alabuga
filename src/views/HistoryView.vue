@@ -80,7 +80,7 @@ function scoreOf(item: NegotiationListItem) {
     <p v-if="error" class="error">{{ error }}</p>
     <p v-if="loading" class="muted">Загружаем тренировки…</p>
     <article v-else-if="!items.length && !error" class="train-empty">
-      <img :src="mountains" alt="" />
+      <img class="bg-peaks" :src="mountains" alt="" />
       <b>Здесь будет история тренировок</b>
       <p class="muted">После каждого созвона — итоговый балл и разбор. Первый займёт около 10 минут.</p>
     </article>
