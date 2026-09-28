@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, nextTick, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import backIcon from '@/assets/onboarding/back.svg'
 import { GLOSSARY_DERIVED, GLOSSARY_MVP, GLOSSARY_PLANNED } from '@/glossary'
 import { useTelegramButtons } from '@/telegram'
 
+const route = useRoute()
 const router = useRouter()
 const query = ref('')
 
@@ -33,9 +34,21 @@ const planned = computed(() => {
 const empty = computed(() => !mvp.value.length && !derived.value.length && !planned.value.length)
 
 function leave() {
+  const negotiationId = route.query.id
+  if (route.query.from === 'debrief' && typeof negotiationId === 'string') {
+    void router.push({ name: 'debrief', params: { id: negotiationId }, query: { review: '1' } })
+    return
+  }
   if (router.options.history.state.back) void router.back()
   else void router.push({ name: 'progress' })
 }
+
+onMounted(async () => {
+  const metric = route.query.metric
+  if (typeof metric !== 'string') return
+  await nextTick()
+  document.getElementById(`glossary-${metric}`)?.scrollIntoView({ block: 'center' })
+})
 
 useTelegramButtons(() => ({ main: null, back: leave }))
 </script>
@@ -58,7 +71,7 @@ useTelegramButtons(() => ({ main: null, back: leave }))
 
     <section v-if="mvp.length" class="glossary-block">
       <article class="card glossary-card">
-        <div v-for="item in mvp" :key="item.en" class="glossary-row">
+        <div v-for="item in mvp" :id="`glossary-${item.key}`" :key="item.key" class="glossary-row" :class="{ 'is-focus': route.query.metric === item.key }">
           <i />
           <div>
             <b>{{ item.title }}</b>

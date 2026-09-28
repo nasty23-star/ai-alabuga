@@ -11,13 +11,18 @@ import { ApiError, cognicoProblem, explainApiError, getApi } from '@/api'
 import { clearCounterpartDraft, readCounterpartDraft, saveCounterpartDraft, type CounterpartDraft } from '@/cognico'
 import { scenarioIcon } from '@/scenarioIcons'
 import { scenarioVariant } from '@/scenarios'
+import { copyProfile, useCounterpartStore } from '@/stores/counterpart'
 import { useSessionStore } from '@/stores/session'
+import { useTrainingsStore } from '@/stores/trainings'
 import { useTelegramButtons } from '@/telegram'
 import type { CognicoRecording, CounterpartProfile, IssueDraft, IssueType, Persona, ScenarioCard, ScenarioTheme, Weight } from '@/api/types'
 
 const route = useRoute()
 const router = useRouter()
 const session = useSessionStore()
+const trainings = useTrainingsStore()
+const counterpart = useCounterpartStore()
+const cachedProfile = counterpart.profile ? copyProfile(counterpart.profile) : null
 const scenarioId = computed(() => (typeof route.params.scenarioId === 'string' ? route.params.scenarioId : null))
 const chosenId = ref<string | null>(scenarioId.value)
 const themes = ref<ScenarioTheme[]>([])
@@ -33,7 +38,7 @@ const batna = ref('')
 const note = ref('')
 const constraints = ref('')
 const issues = ref<IssueDraft[]>([])
-const profile = reactive<CounterpartProfile>({
+const profile = reactive<CounterpartProfile>(cachedProfile ?? {
   display_name: '',
   role: '',
   address_form: 'formal',
@@ -43,17 +48,17 @@ const profile = reactive<CounterpartProfile>({
   sample_phrases: [],
   source: 'manual',
 })
-const customOpen = ref(false)
+const customOpen = ref(route.query.persona === 'custom')
 const manualOpen = ref(false)
 const recordingsOpen = ref(false)
 const review = ref<null | 'card' | 'scenario'>(null)
 const pickingPersona = ref(false)
-const nameLine = ref('')
-const talkativeness = ref(15)
+const nameLine = ref(cachedProfile ? [cachedProfile.display_name, cachedProfile.role].filter(Boolean).join(', ') : '')
+const talkativeness = ref(cachedProfile?.reply_length === 'long' ? 100 : cachedProfile?.reply_length === 'medium' ? 50 : 15)
 const phraseDraft = ref('')
 const addingPhrase = ref(false)
-const cognicoConnected = ref(false)
-const cognicoKnown = ref(false)
+const cognicoConnected = ref(counterpart.cognicoConnected === true)
+const cognicoKnown = ref(counterpart.cognicoConnected != null)
 const cognicoNotice = ref('')
 const recordings = ref<CognicoRecording[]>([])
 const recordingsLoading = ref(false)
@@ -75,6 +80,13 @@ function typeOf(id: string) {
 }
 
 onMounted(async () => {
+  const openingCustom = route.query.persona === 'custom'
+  const stamp = formStamp()
+  if (openingCustom) {
+    personaId.value = 'custom'
+    customOpen.value = true
+    void loadCognico()
+  }
   try {
     const [types, people, catalog] = await Promise.all([getApi().issueTypes(), getApi().personas(), getApi().scenarios()])
     issueTypes.value = types.items
@@ -89,10 +101,16 @@ onMounted(async () => {
         weight: 'medium' as Weight,
       }))
     }
-    const openingCustom = route.query.persona === 'custom'
     const draft = openingCustom ? readCounterpartDraft() : null
     const custom = people.items.find((item) => item.id === 'custom' && item.configured)
-    if (custom && !draft) applyProfile(await getApi().getCounterpart())
+    if ((custom || cachedProfile) && !draft) {
+      try {
+        const saved = await getApi().getCounterpart()
+        if (formStamp() === stamp) applyProfile(saved)
+      } catch {
+        // На экране остаётся карточка из локального хранилища.
+      }
+    }
     if (draft) {
       applyDraft(draft)
       if (draft.wizard.scenarioId && card.value?.id !== draft.wizard.scenarioId) {
@@ -106,7 +124,6 @@ onMounted(async () => {
     if (openingCustom) {
       personaId.value = 'custom'
       customOpen.value = true
-      void loadCognico()
     }
     const flag = route.query.cognico
     if (flag === 'connected') cognicoNotice.value = 'CogniCo подключён'
@@ -173,9 +190,26 @@ function issuesHint(): string {
 }
 
 function applyProfile(saved: CounterpartProfile) {
-  Object.assign(profile, saved)
-  nameLine.value = [saved.display_name, saved.role].filter(Boolean).join(', ')
-  talkativeness.value = saved.reply_length === 'long' ? 100 : saved.reply_length === 'medium' ? 50 : 15
+  const next = copyProfile(saved)
+  Object.assign(profile, next)
+  nameLine.value = [next.display_name, next.role].filter(Boolean).join(', ')
+  talkativeness.value = next.reply_length === 'long' ? 100 : next.reply_length === 'medium' ? 50 : 15
+  counterpart.remember(next)
+}
+
+function formStamp() {
+  return JSON.stringify({
+    name: nameLine.value,
+    formality: profile.formality,
+    talk: talkativeness.value,
+    phrases: profile.sample_phrases,
+    traits: profile.traits,
+  })
+}
+
+function rememberForm() {
+  applyNameLine()
+  counterpart.remember(copyProfile(profile))
 }
 
 function openCustom() {
@@ -234,12 +268,20 @@ function applyDraft(draft: CounterpartDraft) {
   if (draft.wizard.scenarioId) chosenId.value = draft.wizard.scenarioId
 }
 
+const openingDraft = route.query.persona === 'custom' ? readCounterpartDraft() : null
+if (openingDraft) applyDraft(openingDraft)
+
 async function loadCognico() {
   try {
-    cognicoConnected.value = (await getApi().cognicoStatus()).connected
+    const connected = (await getApi().cognicoStatus()).connected
+    cognicoConnected.value = connected
+    counterpart.rememberCognico(connected)
   } catch (caught) {
-    cognicoConnected.value = false
     const problem = cognicoProblem(caught)
+    if (problem.kind === 'disconnected' || counterpart.cognicoConnected == null) {
+      cognicoConnected.value = false
+      counterpart.rememberCognico(false)
+    }
     if (problem.kind !== 'disconnected') error.value = problem.kind === 'other' ? 'Не удалось проверить CogniCo' : problem.message
   } finally {
     cognicoKnown.value = true
@@ -251,6 +293,7 @@ function noteCognicoProblem(caught: unknown) {
   error.value = problem.message
   if (problem.kind === 'disconnected') {
     cognicoConnected.value = false
+    counterpart.rememberCognico(false)
     recordingsOpen.value = false
   }
   if (problem.kind === 'unavailable') recordingsOpen.value = false
@@ -276,6 +319,7 @@ async function disconnectCognico() {
   try {
     await getApi().disconnectCognico()
     cognicoConnected.value = false
+    counterpart.rememberCognico(false)
   } catch (caught) {
     noteCognicoProblem(caught)
   } finally {
@@ -378,6 +422,7 @@ async function saveProfile() {
   pending.value = true
   try {
     await getApi().putCounterpart({ ...profile })
+    rememberForm()
     clearCounterpartDraft()
     closeCustom()
     review.value = 'card'
@@ -462,6 +507,7 @@ async function confirmCounterpart() {
   pending.value = true
   try {
     await getApi().putCounterpart({ ...profile })
+    rememberForm()
     clearCounterpartDraft()
     personaId.value = 'custom'
     manualOpen.value = false
@@ -586,7 +632,7 @@ async function applyScenario(id: string, replace: boolean) {
     step.value = 0
     review.value = null
     pickingPersona.value = false
-    customOpen.value = false
+    if (route.query.persona !== 'custom') customOpen.value = false
     editingFromReview.value = false
   }
   if (replace || !(goal.value || '').trim()) goal.value = next.defaults.goal || ''
@@ -638,6 +684,7 @@ async function start() {
     if (personaId.value === 'custom' && profile.display_name.trim()) {
       applyNameLine()
       await getApi().putCounterpart({ ...profile })
+      rememberForm()
     }
     const created = await getApi().startNegotiation({
       scenario_id: chosenId.value,
@@ -650,6 +697,7 @@ async function start() {
         own_constraints: constraints.value.trim() || null,
       },
     }, crypto.randomUUID())
+    void trainings.refresh().catch(() => {})
     await router.push({ name: 'chat', params: { id: created.id }, state: { opening: created.opening_utterance } })
   } catch (caught) {
     error.value = caught instanceof ApiError ? explainApiError(caught, 'Не удалось начать') : 'Не удалось начать'

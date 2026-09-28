@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ApiError, getApi } from '@/api'
+import { useTrainingsStore } from '@/stores/trainings'
 import backIcon from '@/assets/onboarding/back.svg'
 import replayIcon from '@/assets/onboarding/replay.png'
 import personaCpo from '@/assets/onboarding/persona-toxic-cpo.png'
@@ -15,6 +16,7 @@ const props = defineProps<{
 
 const route = useRoute()
 const router = useRouter()
+const trainings = useTrainingsStore()
 const id = computed(() => String(route.params.id))
 const state = ref<NegotiationState | null>(null)
 const draft = ref('')
@@ -47,6 +49,7 @@ function apply(event: TurnEvent) {
   if (event.event === 'deal_proposed') deal.value = event.data
   if (event.event === 'stream_failed') error.value = event.data.message
   if (event.event === 'counterpart_left' || event.event === 'turn_limit_reached') {
+    void trainings.refresh().catch(() => {})
     void router.push({ name: 'debrief', params: { id: id.value } })
   }
 }
@@ -98,6 +101,7 @@ async function send() {
 async function accept() {
   try {
     await getApi().acceptDeal(id.value)
+    void trainings.refresh().catch(() => {})
     await router.push({ name: 'debrief', params: { id: id.value } })
   } catch (caught) {
     if (caught instanceof ApiError && caught.code === 'no_converged_terms') {
@@ -116,6 +120,7 @@ async function reject() {
 
 async function leave() {
   await getApi().walkAway(id.value)
+  void trainings.refresh().catch(() => {})
   await router.push({ name: 'debrief', params: { id: id.value } })
 }
 

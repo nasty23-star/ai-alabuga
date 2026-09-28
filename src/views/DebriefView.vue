@@ -29,7 +29,7 @@ const COPY: Record<string, { en: string; text: string }> = {
   },
   own_outcome: {
     en: 'Own Outcome',
-    text: 'Насколько итог хорош по твоим приоритетам из мастера: 0 — твоя граница, 100 — идеал.',
+    text: 'Насколько итог хорош по твоим приоритетам из мастера: 0 — твоя граница, 10 — идеал.',
   },
   batna_gain: {
     en: 'BATNA Gain',
@@ -72,14 +72,29 @@ const reviewTab = ref<'deal' | 'growth'>('deal')
 const DEAL_KEYS = new Set(['own_outcome', 'batna_gain', 'reservation_point_discipline', 'concession_discipline'])
 
 const selected = computed(() => debrief.value?.metrics.find((metric) => metric.key === selectedKey.value) ?? null)
+
+function pointsToTen(value: number) {
+  return Math.round(Math.max(0, Math.min(10, value / 10)) * 10) / 10
+}
+
+function metricTen(metric: Metric) {
+  if (!metric.available || typeof metric.value !== 'number') return null
+  if (metric.unit !== 'points' && metric.unit !== 'percent') return null
+  return pointsToTen(metric.value)
+}
+
 const score = computed(() => {
   const own = debrief.value?.outcome.own_outcome
-  if (own != null) return Math.round(own)
-  const numbers = (debrief.value?.metrics ?? []).filter((metric) => metric.available && metric.unit !== 'count' && typeof metric.value === 'number')
-  if (!numbers.length) return null
-  const total = numbers.reduce((sum, metric) => sum + Number(metric.value), 0)
-  return Math.round(total / numbers.length)
+  if (typeof own === 'number') return pointsToTen(own)
+  const tens = (debrief.value?.metrics ?? []).map(metricTen).filter((value): value is number => value != null)
+  if (!tens.length) return null
+  const average = tens.reduce((sum, value) => sum + value, 0) / tens.length
+  return Math.round(average * 10) / 10
 })
+
+function formatTen(value: number) {
+  return value.toLocaleString('ru-RU', { maximumFractionDigits: 1 })
+}
 
 const outcomeLabel = computed(() => {
   const type = debrief.value?.outcome.type
@@ -108,7 +123,8 @@ onMounted(async () => {
     const [report, state] = await Promise.all([getApi().debrief(id.value), getApi().getNegotiation(id.value)])
     debrief.value = report
     negotiation.value = state
-    if (route.query.link === '1' || route.query.links === '1') {
+    if (route.query.review === '1') step.value = 'summary'
+    else if (route.query.link === '1' || route.query.links === '1') {
       step.value = 'links'
       if (route.query.link === '1') await ensureLink()
     }
@@ -120,8 +136,14 @@ onMounted(async () => {
 function formatMetric(metric: Metric) {
   if (!metric.available) return metric.unavailable_reason ?? '—'
   if (metric.unit === 'boolean') return metric.value ? 'Да' : 'Нет'
+  const ten = metricTen(metric)
+  if (ten != null && metric.unit === 'points') return formatTen(ten)
   if (metric.unit === 'percent') return `${metric.value}%`
   return String(metric.value ?? '—')
+}
+
+function openGlossary(key: string) {
+  void router.push({ name: 'glossary', query: { from: 'debrief', id: id.value, metric: key } })
 }
 
 function ratio(metric: Metric) {
@@ -247,8 +269,8 @@ useTelegramButtons(() => {
       </header>
       <div class="score-hero">
         <span class="score-pill" :class="debrief.outcome.type">{{ outcomeLabel }}</span>
-        <b>{{ score ?? '—' }}</b>
-        <span>итоговый балл</span>
+        <b>{{ score == null ? '—' : formatTen(score) }}</b>
+        <span>из 10</span>
       </div>
       <div class="score-art">
         <img :src="peakTotal" alt="" />
@@ -303,28 +325,38 @@ useTelegramButtons(() => {
       <h1>{{ negotiation?.scenario.title ?? 'Разбор' }}</h1>
       <p v-if="negotiation?.counterpart.name" class="muted">{{ negotiation.counterpart.name }}</p>
       <section class="score-card score-row">
-        <b>{{ score ?? '—' }}</b>
-        <span>Итоговый балл<span class="muted">взвешенное среднее</span></span>
+        <b>{{ score == null ? '—' : formatTen(score) }}</b>
+        <span>Итоговый балл<span class="muted">из 10</span></span>
         <!-- <em class="score-pill" :class="debrief.outcome.type">{{ outcomeShort }}</em> -->
       </section>
       <section v-if="startHere.length" class="card start-here">
         <header><b>С чего начать</b><span class="muted">топ-{{ startHere.length }}</span></header>
-        <button v-for="(metric, index) in startHere" :key="metric.key" type="button" @click="openMetric(metric.key)">
-          <i>{{ index + 1 }}</i>
-          <span>{{ metric.title }}</span>
-          <b>{{ metric.available ? formatMetric(metric) : '—' }}</b>
-        </button>
+        <div v-for="(metric, index) in startHere" :key="metric.key" class="start-row">
+          <button type="button" @click="openMetric(metric.key)">
+            <i>{{ index + 1 }}</i>
+            <span>{{ metric.title }}</span>
+            <b>{{ metric.available ? formatMetric(metric) : '—' }}</b>
+          </button>
+          <button class="metric-info" type="button" :aria-label="`Глоссарий: ${metric.title}`" @click="openGlossary(metric.key)">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.4"/><path d="M8 7.2V11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="5.1" r="0.7" fill="currentColor"/></svg>
+          </button>
+        </div>
       </section>
       <div class="review-tabs" role="tablist">
         <button type="button" role="tab" :aria-selected="reviewTab === 'deal'" :class="{ on: reviewTab === 'deal' }" @click="reviewTab = 'deal'">Итог сделки</button>
         <button type="button" role="tab" :aria-selected="reviewTab === 'growth'" :class="{ on: reviewTab === 'growth' }" @click="reviewTab = 'growth'">Мой рост</button>
       </div>
       <div v-if="reviewTab === 'deal'" class="metrics">
-        <button v-for="metric in dealMetrics" :key="metric.key" class="metric" type="button" @click="openMetric(metric.key)">
-          <em :class="metric.available ? 'good' : 'muted'">{{ metric.available ? 'считается' : 'заглушка' }}</em>
-          <span>{{ metric.title }}</span>
-          <b>{{ metric.available ? formatMetric(metric) : '—' }}</b>
-        </button>
+        <article v-for="metric in dealMetrics" :key="metric.key" class="metric">
+          <button class="metric-open" type="button" @click="openMetric(metric.key)">
+            <em :class="metric.available ? 'good' : 'muted'">{{ metric.available ? 'считается' : 'заглушка' }}</em>
+            <span>{{ metric.title }}</span>
+            <b>{{ metric.available ? formatMetric(metric) : '—' }}</b>
+          </button>
+          <button class="metric-info" type="button" :aria-label="`Глоссарий: ${metric.title}`" @click="openGlossary(metric.key)">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.4"/><path d="M8 7.2V11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="5.1" r="0.7" fill="currentColor"/></svg>
+          </button>
+        </article>
       </div>
       <template v-else>
         <article v-for="(item, index) in debrief.guidance" :key="index" class="card growth-note">
@@ -334,14 +366,19 @@ useTelegramButtons(() => {
           <p class="muted">«{{ item.evidence.quote }}»</p>
         </article>
         <div class="metrics">
-          <button v-for="metric in growthMetrics" :key="metric.key" class="metric" type="button" @click="openMetric(metric.key)">
-            <em :class="metric.available ? 'good' : 'muted'">{{ metric.available ? 'считается' : 'заглушка' }}</em>
-            <span>{{ metric.title }}</span>
-            <b>{{ metric.available ? formatMetric(metric) : '—' }}</b>
-          </button>
+          <article v-for="metric in growthMetrics" :key="metric.key" class="metric">
+            <button class="metric-open" type="button" @click="openMetric(metric.key)">
+              <em :class="metric.available ? 'good' : 'muted'">{{ metric.available ? 'считается' : 'заглушка' }}</em>
+              <span>{{ metric.title }}</span>
+              <b>{{ metric.available ? formatMetric(metric) : '—' }}</b>
+            </button>
+            <button class="metric-info" type="button" :aria-label="`Глоссарий: ${metric.title}`" @click="openGlossary(metric.key)">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.4"/><path d="M8 7.2V11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="5.1" r="0.7" fill="currentColor"/></svg>
+            </button>
+          </article>
         </div>
       </template>
-      <button class="linkish debrief-link" type="button" @click="router.push({ name: 'glossary' })">Что значат метрики</button>
+      <button class="linkish debrief-link" type="button" @click="router.push({ name: 'glossary', query: { from: 'debrief', id: id } })">Что значат метрики</button>
       <button class="btn tg-hide" type="button" @click="again">Новые переговоры</button>
       <button class="btn ghost" type="button" @click="again">Новая попытка</button>
     </template>

@@ -3,19 +3,19 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import chartCard from '@/assets/onboarding/chart-card.svg'
 import chevronLight from '@/assets/onboarding/chevron-light.svg'
-import { ApiError, getApi } from '@/api'
-import type { NegotiationListItem } from '@/api/types'
+import { ApiError } from '@/api'
 import { GLOSSARY_MVP } from '@/glossary'
+import { useTrainingsStore } from '@/stores/trainings'
 import { useTelegramButtons } from '@/telegram'
 
 const router = useRouter()
+const trainings = useTrainingsStore()
 const metricCount = GLOSSARY_MVP.length
-const items = ref<NegotiationListItem[]>([])
 const error = ref('')
 
 useTelegramButtons(() => ({ main: null, back: null }))
 
-const finished = computed(() => items.value.filter((item) => item.status === 'finished'))
+const finished = computed(() => trainings.items.filter((item) => item.status === 'finished'))
 const scored = computed(() => finished.value
   .filter((item) => typeof item.outcome?.own_outcome === 'number')
   .slice()
@@ -46,8 +46,7 @@ const chart = computed(() => {
 
 onMounted(async () => {
   try {
-    const page = await getApi().listNegotiations(50, null)
-    items.value = page.items
+    await trainings.refresh()
   } catch (caught) {
     error.value = caught instanceof ApiError ? caught.message : 'Прогресс недоступен'
   }
@@ -66,12 +65,6 @@ function deltaLabel(value: number) {
       <svg class="progress-chart" width="220" height="64" viewBox="0 0 220 64" fill="none" aria-hidden="true">
         <path d="M6 46C28 44 42 38 62 40C86 42 98 24 124 26C150 28 168 16 214 12" stroke="#b7cdf6" stroke-width="2" stroke-linecap="round" stroke-dasharray="1.5 6" />
       </svg>
-      <!-- <svg v-if="chart" class="progress-chart" width="220" height="64" viewBox="0 0 220 64" fill="none" aria-hidden="true">
-        <path :d="chart" stroke="#1a5cff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-      </svg> -->
-      <!-- <svg v-else class="progress-chart" width="220" height="64" viewBox="0 0 220 64" fill="none" aria-hidden="true">
-        <path d="M6 46C28 44 42 38 62 40C86 42 98 24 124 26C150 28 168 16 214 12" stroke="#b7cdf6" stroke-width="2" stroke-linecap="round" stroke-dasharray="1.5 6" />
-      </svg> -->
       <template v-if="scored.length >= 2 && latest != null">
         <b>Итоговый балл {{ latest }}</b>
         <p class="muted">Средний {{ average }} по {{ scored.length }} созвонам<span v-if="delta != null"> · {{ deltaLabel(delta) }} к прошлому</span></p>

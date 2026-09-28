@@ -8,15 +8,15 @@ import peaksKamnegryzIcon from '@/assets/onboarding/peaks-kamnegryz.png'
 import peaksSkalozavrIcon from '@/assets/onboarding/peaks-skalozavr.png'
 import peaksVershinoidIcon from '@/assets/onboarding/peaks-vershinoid.png'
 import peaksTsarIcon from '@/assets/onboarding/peaks-tsar.png'
-import { ApiError, getApi } from '@/api'
-import type { NegotiationListItem } from '@/api/types'
+import { ApiError } from '@/api'
 import { collectPeaks } from '@/gamification/badges'
+import { useTrainingsStore } from '@/stores/trainings'
 import { useTelegramButtons } from '@/telegram'
 
 const router = useRouter()
-const items = ref<NegotiationListItem[]>([])
+const trainings = useTrainingsStore()
 const error = ref('')
-const peaks = computed(() => collectPeaks(items.value))
+const peaks = computed(() => collectPeaks(trainings.items))
 const earned = computed(() => peaks.value.filter((item) => item.earned).length)
 
 useTelegramButtons(() => ({
@@ -26,9 +26,9 @@ useTelegramButtons(() => ({
 
 onMounted(async () => {
   try {
-    items.value = (await getApi().listNegotiations(20, null)).items
+    await trainings.refresh()
   } catch (caught) {
-    error.value = caught instanceof ApiError ? caught.message : 'Коллекция недоступна'
+    if (!trainings.items.length) error.value = caught instanceof ApiError ? caught.message : 'Коллекция недоступна'
   }
 })
 </script>

@@ -5,9 +5,10 @@ import chevron from '@/assets/onboarding/chevron.svg'
 import chevronLight from '@/assets/onboarding/chevron-light.svg'
 import micLime from '@/assets/onboarding/mic-lime.svg'
 import mountains from '@/assets/onboarding/mountains.png'
-import { ApiError, getApi } from '@/api'
+import { ApiError } from '@/api'
 import type { NegotiationListItem, NegotiationStatus } from '@/api/types'
 import { scenarioIcon } from '@/scenarioIcons'
+import { useTrainingsStore } from '@/stores/trainings'
 import { useTelegramButtons } from '@/telegram'
 
 const THEME_BY_TITLE: Record<string, string> = {
@@ -19,22 +20,24 @@ const THEME_BY_TITLE: Record<string, string> = {
 }
 
 const router = useRouter()
-const items = ref<NegotiationListItem[]>([])
-const cursor = ref<string | null>(null)
+const trainings = useTrainingsStore()
 const error = ref('')
-const loading = ref(true)
+const loading = ref(trainings.items.length === 0)
 
 useTelegramButtons(() => ({ main: null, back: null }))
 
 async function loadMore() {
-  const page = await getApi().listNegotiations(20, cursor.value)
-  items.value.push(...page.items)
-  cursor.value = page.next_cursor
+  error.value = ''
+  try {
+    await trainings.loadMore()
+  } catch (caught) {
+    error.value = caught instanceof ApiError ? caught.message : 'История недоступна'
+  }
 }
 
 onMounted(async () => {
   try {
-    await loadMore()
+    await trainings.refresh()
   } catch (caught) {
     error.value = caught instanceof ApiError ? caught.message : 'История недоступна'
   } finally {
@@ -78,14 +81,14 @@ function scoreOf(item: NegotiationListItem) {
       <img class="home-call-chevron" :src="chevronLight" alt="" width="20" height="22" />
     </button>
     <p v-if="error" class="error">{{ error }}</p>
-    <p v-if="loading" class="muted">Загружаем тренировки…</p>
-    <article v-else-if="!items.length && !error" class="train-empty">
+    <p v-if="loading && !trainings.items.length" class="muted">Загружаем тренировки…</p>
+    <article v-else-if="!trainings.items.length && !error" class="train-empty">
       <img class="bg-peaks" :src="mountains" alt="" />
       <b>Здесь будет история тренировок</b>
       <p class="muted">После каждого созвона — итоговый балл и разбор. Первый займёт около 10 минут.</p>
     </article>
     <div v-else class="train-list">
-      <button v-for="item in items" :key="item.id" class="train-row" type="button" @click="open(item)">
+      <button v-for="item in trainings.items" :key="item.id" class="train-row" type="button" @click="open(item)">
         <span class="pick-icon" :style="{ background: iconOf(item).bg, color: iconOf(item).color }" v-html="iconOf(item).svg" />
         <span class="pick-copy">
           <b>{{ item.theme_title }}</b>
@@ -95,7 +98,7 @@ function scoreOf(item: NegotiationListItem) {
         <span v-else class="train-note">{{ statusLabel(item.status) }}</span>
         <img v-if="item.status !== 'interrupted'" :src="chevron" alt="" width="20" height="22" />
       </button>
-      <button v-if="cursor" class="btn ghost" type="button" @click="loadMore">Ещё</button>
+      <button v-if="trainings.cursor" class="btn ghost" type="button" @click="loadMore">Ещё</button>
     </div>
   </main>
 </template>
