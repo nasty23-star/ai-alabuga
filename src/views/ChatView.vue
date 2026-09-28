@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ApiError, getApi } from '@/api'
 import backIcon from '@/assets/onboarding/back.svg'
@@ -53,7 +53,7 @@ function apply(event: TurnEvent) {
 
 async function scrollDown() {
   await nextTick()
-  scroller.value?.scrollTo({ top: scroller.value.scrollHeight })
+  scroller.value?.scrollTo({ top: scroller.value.scrollHeight, behavior: 'smooth' })
 }
 
 async function send() {
@@ -127,7 +127,11 @@ function back() {
   closeWizard()
 }
 
-const reversedTurns = computed(() => [...(state.value?.turns ?? [])].reverse())
+// Автоскролл вниз при появлении новых сообщений
+watch(
+  () => [state.value?.turns.length, live.value],
+  () => { void scrollDown() }
+)
 
 onMounted(async () => {
   try {
@@ -180,18 +184,18 @@ onMounted(async () => {
       </div>
     </header>
 
-    <div ref="scroller" class="stack" style="flex: 1; overflow: auto; min-height: 240px; flex-direction: column-reverse;">
-      <p 
-      
-      class="bubble counterpart">{{state?.counterpart.name || 'Собеседник'}}…</p>
+    <div ref="scroller" class="stack" style="flex: 1; overflow: auto; min-height: 240px;">
       <p
-        v-for="turn in reversedTurns ?? []"
+        v-for="turn in state?.turns ?? []"
         :key="`${turn.index}-${turn.speaker}`"
         class="bubble"
         :class="turn.speaker"
       >
         {{ turn.text }}
       </p>
+<p v-if="thinking"
+      
+      class="bubble counterpart">{{state?.counterpart.name || 'Собеседник'}} пишет…</p>
       
       <p v-if="live" class="bubble counterpart">{{ live }}</p>
     </div>
