@@ -51,6 +51,11 @@ img { display: block; }
 
 .screen.bare { padding-bottom: 28px; }
 
+.screen.bare.scenarion.h1 {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
 h1 { font-size: 28px; line-height: 32px; font-weight: 700; letter-spacing: -0.84px; }
 h2 { font-size: 18px; font-weight: 700; }
 .muted { color: var(--muted); font-size: 13px; line-height: 19px; }
@@ -342,7 +347,7 @@ h2 { font-size: 18px; font-weight: 700; }
   position: absolute;
   left: 0px;
   width: 100%;
-  bottom: 60px;
+  bottom: 50px;
 }
 .auth-snow { position: absolute; left: 20px; bottom: 0; width: 520px; max-width: none; }
 .auth-pole { position: absolute; left: 180px; bottom: 168px; height: 35px; }
