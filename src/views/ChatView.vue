@@ -187,14 +187,14 @@ onMounted(async () => {
       <p v-if="live" class="bubble counterpart">{{ live }}</p>
     </div>
 
-    <article v-if="deal" class="card stack">
+    <article v-if="deal" class="card-stack">
       <b>Условия сошлись</b>
-      <p class="muted">{{ deal.summary }}</p>
-      <p v-for="term in deal.terms" :key="term.type_id">
-        {{ term.name }}: {{ term.value }} {{ term.unit }}
+      <p class="muted">{{ deal?.summary }}</p>
+      <p v-for="term in deal?.terms" :key="term.type_id">
+       {{ term.name }}: {{ term.value }} {{ term.unit }}
       </p>
-      <div class="row">
-        <button class="btn tg-hide" type="button" style="width: auto; padding: 0 18px" @click="accept">
+      <div class="row-stack">
+        <button class="btn tg-hide" type="button" style="padding: 0 18px" @click="accept">
           Принять
         </button>
         <button class="btn ghost" type="button" @click="reject">К торгу</button>

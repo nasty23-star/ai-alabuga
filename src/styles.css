@@ -118,6 +118,19 @@ h2 { font-size: 18px; font-weight: 700; }
   margin-bottom: 12px;
 }
 
+.card-stack {
+  background: #fff;
+    margin-bottom: 10px;
+    margin-top: 10px;
+    border-radius: 25px;
+    padding: 20px 20px 20px 20px;
+}
+
+.card-stack p {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
 .chip {
   border: 0;
   border-radius: 999px;
@@ -701,6 +714,11 @@ h2 { font-size: 18px; font-weight: 700; }
 .persona-mark { flex: none; }
 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
+.row-stack {
+  display: flex;
+  gap: 8px; align-items: center; 
+  margin-top: 20px;
+}
 .badge {
   min-width: 140px;
   border-radius: 18px;
