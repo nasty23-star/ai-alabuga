@@ -6,6 +6,7 @@ import chevron from '@/assets/onboarding/chevron.svg'
 import personaSpark from '@/assets/onboarding/persona-spark.svg'
 import personaCpo from '@/assets/onboarding/persona-toxic-cpo.png'
 import personaCeo from '@/assets/onboarding/persona-busy-ceo.png'
+import mountains from '@/assets/onboarding/mountains.png'
 import { ApiError, explainApiError, getApi } from '@/api'
 import { scenarioIcon } from '@/scenarioIcons'
 import { scenarioVariant } from '@/scenarios'
@@ -581,6 +582,7 @@ async function start() {
 
     <section v-if="step === 0" class="stack">
       <label class="field wizard-goal" for="negotiation-goal">Цель одной фразой<textarea id="negotiation-goal" name="goal" v-model="goal" required placeholder="Опишите цель переговоров одной фразой" /></label>
+    <img class="bg-peaks" :src="mountains" alt="" />
     </section>
 
     <section v-else-if="step === 1" class="stack">
@@ -622,6 +624,7 @@ async function start() {
     <section v-else-if="step === 3" class="stack">
       <label class="field wizard-goal" for="counterpart-note">О собеседнике<textarea id="counterpart-note" name="counterpart_note" v-model="note" placeholder="Что уже известно о собеседнике" /></label>
       <label class="field wizard-goal" for="own-constraints">Твои ограничения<textarea id="own-constraints" name="own_constraints" v-model="constraints" placeholder="Чего нельзя нарушить" /></label>
+     <img class="bg-peaks-restrictions" :src="mountains" alt="" />
     </section>
 
     <section v-else-if="step === 4" class="persona-list">
