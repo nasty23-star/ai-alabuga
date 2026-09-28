@@ -253,20 +253,21 @@ useTelegramButtons(() => {
       <div class="score-art">
         <img :src="peakTotal" alt="" />
       </div>
-      <button class="btn btn-cta" type="button" @click="rateSheet = true">Смотреть разбор</button>
+      <button class="btn btn-cta" type="button" @click="rateSheet = false; step = 'summary'">Смотреть разбор</button>
 
 
-      <div v-if="rateSheet" class="sheet-backdrop" @click.self="rateSheet = false">
+      <!-- <div v-if="rateSheet" class="sheet-backdrop" @click.self="rateSheet = false">
         <section class="sheet">
-          <h2>Оценишь ценность сделки?</h2>
-          <p class="muted">7 коротких вопросов, около минуты. Можно увидеть не только цифры, но и как прошли переговоры</p>
-          <button class="btn" type="button" @click="rateSheet = false; step = 'feedback'">Да, оценить</button>
-          <button class="btn ghost" type="button" @click="rateSheet = false; step = 'summary'">Нет, сразу к разбору</button>
-        </section>
-      </div>
+          <h2>Оценишь ценность сделки?</h2> -->
+          <!-- <p class="muted">7 коротких вопросов, около минуты. Можно увидеть не только цифры, но и как прошли переговоры</p>
+          <button class="btn" type="button" @click="rateSheet = true">Смотреть разбор</button> -->
+          <!-- <button class="btn" type="button" @click="rateSheet = false; step = 'feedback'">Да, оценить</button> -->
+          <!-- <button class="btn ghost" type="button" @click="rateSheet = false; step = 'summary'">Нет, сразу к разбору</button> -->
+        <!-- </section>
+      </div> -->
     </template>
 
-    <template v-else-if="debrief && step === 'feedback'">
+    <!-- <template v-else-if="debrief && step === 'feedback'">
       <h1>Как прошли переговоры?</h1>
       <article v-for="item in scales" :key="item.id" class="card reflect">
         <p>{{ item.title }}</p>
@@ -289,7 +290,7 @@ useTelegramButtons(() => {
         <textarea v-model="nextAsk" rows="3" placeholder="Раньше спросил бы про сроки" />
       </label>
       <button class="btn tg-hide" type="button" @click="step = 'summary'">К разбору</button>
-    </template>
+    </template> -->
 
     <template v-else-if="debrief && step === 'summary'">
       <header class="pick-head">
@@ -304,7 +305,7 @@ useTelegramButtons(() => {
       <section class="score-card score-row">
         <b>{{ score ?? '—' }}</b>
         <span>Итоговый балл<span class="muted">взвешенное среднее</span></span>
-        <em class="score-pill" :class="debrief.outcome.type">{{ outcomeShort }}</em>
+        <!-- <em class="score-pill" :class="debrief.outcome.type">{{ outcomeShort }}</em> -->
       </section>
       <section v-if="startHere.length" class="card start-here">
         <header><b>С чего начать</b><span class="muted">топ-{{ startHere.length }}</span></header>
