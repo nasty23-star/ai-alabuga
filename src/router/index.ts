@@ -1,4 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
+import { peekCognicoReturn, takeCognicoReturn } from '@/cognico'
 import { useSessionStore } from '@/stores/session'
 import AuthView from '@/views/AuthView.vue'
 import ChatView from '@/views/ChatView.vue'
@@ -63,6 +64,12 @@ router.beforeEach((to) => {
   if (to.name === 'welcome') {
     entryGreeted = true
     return true
+  }
+  if (session.onboarded && peekCognicoReturn()) {
+    entryGreeted = true
+    const flag = takeCognicoReturn()
+    if (to.name === 'wizard' && to.query.persona === 'custom' && to.query.cognico === flag) return true
+    return { name: 'wizard', query: { persona: 'custom', cognico: flag ?? 'connected' } }
   }
   return greetIfReturning(session) ?? true
 })

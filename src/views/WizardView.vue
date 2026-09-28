@@ -7,12 +7,13 @@ import personaSpark from '@/assets/onboarding/persona-spark.svg'
 import personaCpo from '@/assets/onboarding/persona-toxic-cpo.png'
 import personaCeo from '@/assets/onboarding/persona-busy-ceo.png'
 import mountains from '@/assets/onboarding/mountains.png'
-import { ApiError, explainApiError, getApi } from '@/api'
+import { ApiError, cognicoProblem, explainApiError, getApi } from '@/api'
+import { clearCounterpartDraft, readCounterpartDraft, saveCounterpartDraft, type CounterpartDraft } from '@/cognico'
 import { scenarioIcon } from '@/scenarioIcons'
 import { scenarioVariant } from '@/scenarios'
 import { useSessionStore } from '@/stores/session'
 import { useTelegramButtons } from '@/telegram'
-import type { CounterpartProfile, IssueDraft, IssueType, Persona, ScenarioCard, ScenarioTheme, Weight } from '@/api/types'
+import type { CognicoRecording, CounterpartProfile, IssueDraft, IssueType, Persona, ScenarioCard, ScenarioTheme, Weight } from '@/api/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -43,12 +44,23 @@ const profile = reactive<CounterpartProfile>({
   source: 'manual',
 })
 const customOpen = ref(false)
+const manualOpen = ref(false)
+const recordingsOpen = ref(false)
 const review = ref<null | 'card' | 'scenario'>(null)
 const pickingPersona = ref(false)
 const nameLine = ref('')
 const talkativeness = ref(15)
 const phraseDraft = ref('')
 const addingPhrase = ref(false)
+const cognicoConnected = ref(false)
+const cognicoKnown = ref(false)
+const cognicoNotice = ref('')
+const recordings = ref<CognicoRecording[]>([])
+const recordingsLoading = ref(false)
+const recordingQuery = ref('')
+const selectedRecordingId = ref('')
+const speakerName = ref('')
+const importing = ref(false)
 
 const titles = ['Цель', 'Условия сделки', 'Если не договоритесь?', 'Что известно?', 'С кем говорим?', 'Проверь сценарий']
 const editingFromReview = ref(false)
@@ -77,11 +89,32 @@ onMounted(async () => {
         weight: 'medium' as Weight,
       }))
     }
-    if (route.query.persona === 'custom') personaId.value = 'custom'
+    const openingCustom = route.query.persona === 'custom'
+    const draft = openingCustom ? readCounterpartDraft() : null
     const custom = people.items.find((item) => item.id === 'custom' && item.configured)
-    if (custom) {
-      const saved = await getApi().getCounterpart()
-      applyProfile(saved)
+    if (custom && !draft) applyProfile(await getApi().getCounterpart())
+    if (draft) {
+      applyDraft(draft)
+      if (draft.wizard.scenarioId && card.value?.id !== draft.wizard.scenarioId) {
+        try {
+          await applyScenario(draft.wizard.scenarioId, false)
+        } catch {
+          // Сценарий подтянется ещё раз на шаге проверки.
+        }
+      }
+    }
+    if (openingCustom) {
+      personaId.value = 'custom'
+      customOpen.value = true
+      void loadCognico()
+    }
+    const flag = route.query.cognico
+    if (flag === 'connected') cognicoNotice.value = 'CogniCo подключён'
+    else if (flag === 'error') cognicoNotice.value = 'Не получилось'
+    if (typeof flag === 'string') {
+      const query = { ...route.query }
+      delete query.cognico
+      await router.replace({ query })
     }
   } catch (caught) {
     error.value = caught instanceof ApiError ? caught.message : 'Не удалось открыть визард'
@@ -148,7 +181,156 @@ function applyProfile(saved: CounterpartProfile) {
 function openCustom() {
   personaId.value = 'custom'
   nameLine.value = [profile.display_name, profile.role].filter(Boolean).join(', ')
+  manualOpen.value = false
+  recordingsOpen.value = false
+  review.value = null
   customOpen.value = true
+  error.value = ''
+  void loadCognico()
+}
+
+function currentDraft(): CounterpartDraft {
+  applyNameLine()
+  return {
+    nameLine: nameLine.value,
+    formality: profile.formality,
+    talkativeness: talkativeness.value,
+    phrases: [...profile.sample_phrases],
+    traits: [...profile.traits],
+    displayName: profile.display_name,
+    role: profile.role,
+    source: profile.source,
+    addressForm: profile.address_form,
+    replyLength: profile.reply_length,
+    wizard: {
+      scenarioId: chosenId.value,
+      goal: goal.value,
+      batna: batna.value,
+      note: note.value,
+      constraints: constraints.value,
+      issues: issues.value.map((issue) => ({ ...issue })),
+      personaId: personaId.value,
+    },
+  }
+}
+
+function applyDraft(draft: CounterpartDraft) {
+  nameLine.value = draft.nameLine
+  profile.display_name = draft.displayName
+  profile.role = draft.role
+  profile.formality = draft.formality
+  profile.traits = [...draft.traits]
+  profile.sample_phrases = [...draft.phrases]
+  profile.source = draft.source
+  profile.address_form = draft.addressForm
+  profile.reply_length = draft.replyLength
+  talkativeness.value = draft.talkativeness
+  goal.value = draft.wizard.goal
+  batna.value = draft.wizard.batna
+  note.value = draft.wizard.note
+  constraints.value = draft.wizard.constraints
+  issues.value = draft.wizard.issues.map((issue) => ({ ...issue }))
+  personaId.value = draft.wizard.personaId || 'custom'
+  if (draft.wizard.scenarioId) chosenId.value = draft.wizard.scenarioId
+}
+
+async function loadCognico() {
+  try {
+    cognicoConnected.value = (await getApi().cognicoStatus()).connected
+  } catch (caught) {
+    cognicoConnected.value = false
+    const problem = cognicoProblem(caught)
+    if (problem.kind !== 'disconnected') error.value = problem.kind === 'other' ? 'Не удалось проверить CogniCo' : problem.message
+  } finally {
+    cognicoKnown.value = true
+  }
+}
+
+function noteCognicoProblem(caught: unknown) {
+  const problem = cognicoProblem(caught)
+  error.value = problem.message
+  if (problem.kind === 'disconnected') {
+    cognicoConnected.value = false
+    recordingsOpen.value = false
+  }
+  if (problem.kind === 'unavailable') recordingsOpen.value = false
+}
+
+async function connectCognico() {
+  error.value = ''
+  cognicoNotice.value = ''
+  pending.value = true
+  try {
+    saveCounterpartDraft(currentDraft())
+    const { url } = await getApi().connectCognico()
+    window.location.assign(url)
+  } catch (caught) {
+    noteCognicoProblem(caught)
+    pending.value = false
+  }
+}
+
+async function disconnectCognico() {
+  error.value = ''
+  pending.value = true
+  try {
+    await getApi().disconnectCognico()
+    cognicoConnected.value = false
+  } catch (caught) {
+    noteCognicoProblem(caught)
+  } finally {
+    pending.value = false
+  }
+}
+
+async function openRecordings() {
+  error.value = ''
+  cognicoNotice.value = ''
+  recordingsOpen.value = true
+  recordingsLoading.value = true
+  recordingQuery.value = ''
+  selectedRecordingId.value = ''
+  speakerName.value = ''
+  try {
+    const page = await getApi().cognicoRecordings()
+    recordings.value = [...page.items].sort((a, b) => b.recorded_at.localeCompare(a.recorded_at))
+  } catch (caught) {
+    noteCognicoProblem(caught)
+  } finally {
+    recordingsLoading.value = false
+  }
+}
+
+async function pullRecording() {
+  if (!selectedRecordingId.value) {
+    error.value = 'Выберите встречу'
+    return
+  }
+  error.value = ''
+  importing.value = true
+  try {
+    applyProfile(await getApi().importCounterpart({
+      recording_id: selectedRecordingId.value,
+      speaker_name: speakerName.value.trim() || undefined,
+    }))
+    recordingsOpen.value = false
+  } catch (caught) {
+    noteCognicoProblem(caught)
+  } finally {
+    importing.value = false
+  }
+}
+
+function closeRecordings() {
+  recordingsOpen.value = false
+  error.value = ''
+}
+
+function meetingDate(value: string) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }).format(date)
 }
 
 function closeCustom() {
@@ -175,15 +357,6 @@ function removePhrase(index: number) {
   profile.sample_phrases.splice(index, 1)
 }
 
-async function importProfile() {
-  error.value = ''
-  try {
-    applyProfile(await getApi().importCounterpart('irina'))
-  } catch (caught) {
-    error.value = caught instanceof ApiError ? caught.message : 'Импорт недоступен'
-  }
-}
-
 function profileHint(): string {
   applyNameLine()
   const need: string[] = []
@@ -205,6 +378,7 @@ async function saveProfile() {
   pending.value = true
   try {
     await getApi().putCounterpart({ ...profile })
+    clearCounterpartDraft()
     closeCustom()
     review.value = 'card'
   } catch (caught) {
@@ -254,15 +428,53 @@ const counterpartInitials = computed(() => letters(counterpartName.value))
 
 const styleLine = computed(() => {
   const tone = profile.formality >= 0.66 ? 'Жёсткий, спорит цифрами' : profile.formality >= 0.33 ? 'Держит позицию' : 'Мягкий'
-  const talk = profile.reply_length === 'short' ? 'говорит коротко' : profile.reply_length === 'long' ? 'говорит развёрнуто' : 'говорит по делу'
+  const talk = talkativeness.value >= 66 ? 'говорит развёрнуто' : talkativeness.value >= 33 ? 'говорит по делу' : 'говорит коротко'
   return `${tone}, ${talk}`
+})
+
+const visibleRecordings = computed(() => {
+  const query = recordingQuery.value.trim().toLowerCase()
+  if (!query) return recordings.value
+  return recordings.value.filter((item) => item.title.toLowerCase().includes(query) || meetingDate(item.recorded_at).toLowerCase().includes(query))
 })
 
 const weightLabel: Record<Weight, string> = { low: 'низкий', medium: 'средний', high: 'высокий' }
 
 function editCard() {
   review.value = null
+  manualOpen.value = false
   openCustom()
+}
+
+function openManual() {
+  manualOpen.value = true
+  error.value = ''
+  addingPhrase.value = false
+}
+
+async function confirmCounterpart() {
+  error.value = ''
+  const hint = profileHint()
+  if (hint) {
+    error.value = hint
+    return
+  }
+  pending.value = true
+  try {
+    await getApi().putCounterpart({ ...profile })
+    clearCounterpartDraft()
+    personaId.value = 'custom'
+    manualOpen.value = false
+    customOpen.value = false
+    recordingsOpen.value = false
+    review.value = null
+    editingFromReview.value = false
+    step.value = titles.length - 1
+  } catch (caught) {
+    error.value = caught instanceof ApiError ? explainApiError(caught, 'Не удалось сохранить') : 'Не удалось сохранить'
+  } finally {
+    pending.value = false
+  }
 }
 
 function changePersona() {
@@ -293,9 +505,21 @@ function backToScenario() {
 }
 
 useTelegramButtons(() => {
+  if (recordingsOpen.value) {
+    return {
+      main: { text: 'Собрать карточку', enabled: !importing.value && Boolean(selectedRecordingId.value), progress: importing.value, onClick: () => { void pullRecording() } },
+      back: closeRecordings,
+    }
+  }
+  if (manualOpen.value) {
+    return {
+      main: { text: 'Подтвердить собеседника', enabled: !pending.value, progress: pending.value, onClick: () => { void confirmCounterpart() } },
+      back: () => { manualOpen.value = false },
+    }
+  }
   if (review.value === 'card') {
     return {
-      main: { text: 'Подтвердить собеседника', onClick: () => { review.value = 'scenario' } },
+      main: { text: 'Подтвердить собеседника', enabled: !pending.value, progress: pending.value, onClick: () => { void confirmCounterpart() } },
       back: editCard,
     }
   }
@@ -381,6 +605,14 @@ async function chooseScenario(id: string | undefined, replace = false) {
   }
 }
 
+watch(() => route.query.persona, (value, previous) => {
+  if (value === 'custom' && value !== previous) {
+    const draft = readCounterpartDraft()
+    if (draft) applyDraft(draft)
+    openCustom()
+  }
+})
+
 watch(scenarioId, (id, previous) => {
   if (id && id !== previous) {
     void chooseScenario(id, true)
@@ -428,7 +660,104 @@ async function start() {
 </script>
 
 <template>
-  <main v-if="review === 'card'" class="screen own">
+  <main v-if="recordingsOpen" class="screen own">
+    <header class="pick-head">
+      <button class="back" type="button" @click="closeRecordings"><img :src="backIcon" alt="" width="20" height="20" /></button>
+      <b>Встречи</b>
+      <span />
+    </header>
+    <p v-if="error" class="error">{{ error }}</p>
+    <div v-if="importing" class="own-loading" role="status">
+      <span class="own-spinner" aria-hidden="true" />
+      <b>Собираем карточку</b>
+      <span class="muted">Это займёт несколько секунд</span>
+    </div>
+    <template v-else>
+      <p v-if="recordingsLoading" class="muted">Загружаем встречи…</p>
+      <template v-else>
+        <label class="own-name">
+          <input v-model="recordingQuery" type="search" placeholder="Поиск по названию" aria-label="Поиск по встречам" />
+        </label>
+        <div class="meet-list">
+          <button
+            v-for="item in visibleRecordings"
+            :key="item.id"
+            type="button"
+            class="meet"
+            :class="{ 'is-on': selectedRecordingId === item.id }"
+            @click="selectedRecordingId = item.id; error = ''"
+          >
+            <span>
+              <b>{{ item.title }}</b>
+              <span v-if="meetingDate(item.recorded_at)" class="muted">{{ meetingDate(item.recorded_at) }}</span>
+            </span>
+          </button>
+          <p v-if="!visibleRecordings.length" class="muted">{{ error ? 'Не удалось показать встречи' : 'Ничего не нашлось' }}</p>
+        </div>
+        <label v-if="selectedRecordingId" class="own-name">
+          <input v-model="speakerName" placeholder="Имя, как в расшифровке" aria-label="Кто на записи ваш собеседник" />
+        </label>
+        <p v-if="selectedRecordingId" class="check-note">Необязательно: кто на этой встрече ваш собеседник</p>
+        <button class="btn" type="button" :disabled="!selectedRecordingId" @click="pullRecording">Собрать карточку</button>
+      </template>
+    </template>
+  </main>
+
+  <main v-else-if="manualOpen" class="screen own bare">
+    <header class="pick-head">
+      <button class="back" type="button" @click="manualOpen = false"><img :src="backIcon" alt="" width="20" height="20" /></button>
+      <b>Проверь карточку</b>
+      <span />
+    </header>
+    <p v-if="error" class="error">{{ error }}</p>
+    <p v-if="profile.source === 'cognico'" class="check-badge">Собрано из Cognico</p>
+    <article class="card check-card">
+      <div class="check-person">
+        <span class="check-avatar">{{ initials }}</span>
+        <span class="pick-copy">
+          <b>{{ profile.display_name || 'Без имени' }}</b>
+          <span class="muted">{{ profile.role || 'Собеседник' }}</span>
+        </span>
+      </div>
+      <div class="check-block">
+        <span class="muted">Стиль</span>
+        <b class="check-style">{{ styleLine }}</b>
+        <div class="own-sliders own-sliders-plain">
+          <label>
+            <b>Жёсткость</b>
+            <input v-model.number="profile.formality" type="range" min="0" max="1" step="0.01" :style="{ '--p': `${profile.formality * 100}%` }" />
+            <span class="own-scale"><span>мягко</span><span>давит</span></span>
+          </label>
+          <label>
+            <b>Разговорчивость</b>
+            <input v-model.number="talkativeness" type="range" min="0" max="100" step="1" :style="{ '--p': `${talkativeness}%` }" />
+            <span class="own-scale"><span>коротко</span><span>много слов</span></span>
+          </label>
+        </div>
+      </div>
+      <div v-if="profile.traits.length" class="check-block">
+        <span class="muted">Что для него важно</span>
+        <div class="own-chips">
+          <span v-for="trait in profile.traits" :key="trait" class="check-tag">{{ trait }}</span>
+        </div>
+      </div>
+      <div class="check-block">
+        <span class="muted">Типичные возражения</span>
+        <div class="own-chips">
+          <button v-for="(phrase, index) in profile.sample_phrases" :key="`${phrase}-${index}`" type="button" class="own-chip" @click="removePhrase(index)">«{{ phrase }}»</button>
+          <button v-if="!addingPhrase && profile.sample_phrases.length < 5" class="own-chip add" type="button" @click="addingPhrase = true">+ ещё</button>
+        </div>
+        <form v-if="addingPhrase" class="own-add" @submit.prevent="addPhrase">
+          <input v-model="phraseDraft" placeholder="Возражение" maxlength="200" />
+          <button class="own-pull" type="submit">Добавить</button>
+        </form>
+      </div>
+    </article>
+    <p class="check-note">{{ profile.source === 'cognico' ? 'Источники: звонки и документы. Поправь, если что-то не так.' : 'Карточка заполнена вручную. Поправь, если что-то не так.' }}</p>
+    <button class="btn" type="button" :disabled="pending" @click="confirmCounterpart">Подтвердить собеседника</button>
+  </main>
+
+  <main v-else-if="review === 'card'" class="screen own bare">
     <header class="pick-head">
       <button class="back" type="button" @click="editCard"><img :src="backIcon" alt="" width="20" height="20" /></button>
       <b>Проверь карточку</b>
@@ -459,9 +788,9 @@ async function start() {
         <b>«{{ profile.sample_phrases.join('» · «') }}»</b>
       </div>
     </article>
-    <p class="check-note">{{ profile.source === 'cognico' ? 'Источники: звонки и переписка. Поправь, если что-то не так.' : 'Карточка заполнена вручную. Поправь, если что-то не так.' }}</p>
-    <button class="btn" type="button" @click="review = 'scenario'">Подтвердить собеседника</button>
-    <button class="btn ghost" type="button" @click="editCard">Заполнить вручную</button>
+    <p class="check-note">{{ profile.source === 'cognico' ? 'Источники: звонки и документы. Поправь, если что-то не так.' : 'Карточка заполнена вручную. Поправь, если что-то не так.' }}</p>
+    <button class="btn" type="button" :disabled="pending" @click="confirmCounterpart">Подтвердить собеседника</button>
+    <button class="btn ghost" type="button" @click="openManual">Заполнить вручную</button>
   </main>
 
   <main v-else-if="review === 'scenario'" class="screen own">
@@ -509,12 +838,13 @@ async function start() {
     <button class="btn" type="button" :disabled="pending" @click="start">Начать общение</button>
   </main>
 
-  <main v-else-if="customOpen" class="screen own">
+  <main v-else-if="customOpen" class="screen own bare">
     <header class="pick-head">
       <button class="back" type="button" @click="closeCustom"><img :src="backIcon" alt="" width="20" height="20" /></button>
       <b>Свой собеседник</b>
       <span />
     </header>
+    <p v-if="cognicoNotice" class="own-notice" :class="{ 'is-bad': cognicoNotice === 'Не получилось' }">{{ cognicoNotice }}</p>
     <p v-if="error" class="error">{{ error }}</p>
     <article class="card own-source">
       <span class="own-mark" aria-hidden="true">
@@ -522,9 +852,11 @@ async function start() {
       </span>
       <span class="pick-copy">
         <b>Cognico</b>
-        <span class="muted">Звонки и переписка</span>
+        <span class="muted">{{ cognicoConnected ? 'Звонки и переписка' : (cognicoKnown ? 'Не подключено' : 'Проверяем подключение…') }}</span>
+        <button v-if="cognicoConnected" class="own-disconnect" type="button" :disabled="pending" @click="disconnectCognico">Отключить</button>
       </span>
-      <button class="own-pull" type="button" @click="importProfile">Подтянуть</button>
+      <button v-if="cognicoConnected" class="own-pull" type="button" :disabled="pending" @click="openRecordings">Подтянуть</button>
+      <button v-else class="own-pull is-connect" type="button" :disabled="pending || !cognicoKnown" @click="connectCognico">Подключить CogniCo</button>
     </article>
     <label class="own-name">
       <input v-model="nameLine" placeholder="[Имя], CFO" />
@@ -552,7 +884,9 @@ async function start() {
         <button class="own-pull" type="submit">Добавить</button>
       </form>
     </section>
-    <button class="btn" type="button" :disabled="pending" @click="saveProfile">Сохранить собеседника</button>
+    <div class="btn-actions">
+      <button class="btn" type="button" :disabled="pending" @click="saveProfile">Сохранить собеседника</button>
+    </div>
   </main>
 
   <main v-else class="screen bare scenario">

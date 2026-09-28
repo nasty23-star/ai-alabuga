@@ -99,6 +99,25 @@ export interface CounterpartProfile {
   source: CounterpartSource
 }
 
+export interface CognicoStatus {
+  connected: boolean
+}
+
+export interface CognicoConnect {
+  url: string
+}
+
+export interface CognicoRecording {
+  id: string
+  title: string
+  recorded_at: string
+}
+
+export interface CounterpartImport {
+  recording_id: string
+  speaker_name?: string
+}
+
 export interface CounterpartRef {
   persona_id: string
   name: string

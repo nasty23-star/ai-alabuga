@@ -3,6 +3,10 @@ import { readSse } from './sse'
 import type {
   Account,
   AuthResponse,
+  CognicoConnect,
+  CognicoRecording,
+  CognicoStatus,
+  CounterpartImport,
   CounterpartProfile,
   Debrief,
   IssueType,
@@ -35,7 +39,11 @@ export interface Api {
   getCounterpart(): Promise<CounterpartProfile>
   putCounterpart(body: CounterpartProfile): Promise<CounterpartProfile>
   deleteCounterpart(): Promise<void>
-  importCounterpart(personId: string): Promise<CounterpartProfile>
+  cognicoStatus(): Promise<CognicoStatus>
+  connectCognico(): Promise<CognicoConnect>
+  disconnectCognico(): Promise<void>
+  cognicoRecordings(): Promise<{ items: CognicoRecording[] }>
+  importCounterpart(body: CounterpartImport): Promise<CounterpartProfile>
   startNegotiation(body: StartNegotiationBody, idempotencyKey: string): Promise<NegotiationCreated>
   getNegotiation(id: string): Promise<NegotiationState>
   listNegotiations(limit: number, cursor: string | null): Promise<{ items: NegotiationListItem[]; next_cursor: string | null }>
@@ -88,6 +96,37 @@ function asTurnEvent(event: string, data: unknown): TurnEvent {
   return { event, data } as TurnEvent
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' ? value as Record<string, unknown> : {}
+}
+
+function readConnected(payload: unknown): boolean {
+  const row = asRecord(payload)
+  if (typeof row.connected === 'boolean') return row.connected
+  return row.status === 'connected' || row.state === 'connected'
+}
+
+function readCognicoUrl(payload: unknown): string {
+  const row = asRecord(payload)
+  const url = [row.authorize_url, row.url, row.authorization_url, row.auth_url, row.redirect_url, row.link].find((item) => typeof item === 'string' && item)
+  if (typeof url !== 'string') throw new ApiError(502, 'invalid_request', 'Нет ссылки для подключения CogniCo')
+  return url
+}
+
+function readRecordings(payload: unknown): { items: CognicoRecording[] } {
+  const row = asRecord(payload)
+  const raw = Array.isArray(payload) ? payload : Array.isArray(row.items) ? row.items : Array.isArray(row.recordings) ? row.recordings : []
+  const items = raw.flatMap((item) => {
+    const rec = asRecord(item)
+    const id = rec.id ?? rec.recording_id
+    const title = rec.title ?? rec.name ?? rec.subject
+    const recorded = rec.recorded_at ?? rec.started_at ?? rec.date ?? rec.created_at
+    if ((typeof id !== 'string' && typeof id !== 'number') || typeof title !== 'string') return []
+    return [{ id: String(id), title, recorded_at: typeof recorded === 'string' ? recorded : '' }]
+  })
+  return { items }
+}
+
 export function createHttpApi(): Api {
   return {
     signUp: (login, password) => request('/api/auth/sign-up', { method: 'POST', body: JSON.stringify({ login, password }) }),
@@ -105,11 +144,32 @@ export function createHttpApi(): Api {
     getCounterpart: () => request('/api/counterpart-profile'),
     putCounterpart: (body) => request('/api/counterpart-profile', { method: 'PUT', body: JSON.stringify(body) }),
     deleteCounterpart: () => request('/api/counterpart-profile', { method: 'DELETE' }),
-    importCounterpart: (personId) =>
-      request('/api/counterpart-profile/import', {
-        method: 'POST',
-        body: JSON.stringify({ source: 'cognico', person_id: personId }),
-      }),
+    async cognicoStatus() {
+      try {
+        return { connected: readConnected(await request<unknown>('/api/integrations/cognico')) }
+      } catch (error) {
+        if (error instanceof ApiError && (error.status === 404 || error.code === 'cognico_not_connected' || error.code === 'not_connected')) {
+          return { connected: false }
+        }
+        throw error
+      }
+    },
+    async connectCognico() {
+      return { url: readCognicoUrl(await request<unknown>('/api/integrations/cognico/connect', { method: 'POST' })) }
+    },
+    disconnectCognico: () => request('/api/integrations/cognico', { method: 'DELETE' }),
+    async cognicoRecordings() {
+      return readRecordings(await request<unknown>('/api/integrations/cognico/recordings'))
+    },
+    importCounterpart: (body) => {
+      const payload: { source: 'cognico'; recording_id: string; speaker_name?: string } = {
+        source: 'cognico',
+        recording_id: body.recording_id,
+      }
+      const speaker = body.speaker_name?.trim()
+      if (speaker) payload.speaker_name = speaker
+      return request('/api/counterpart-profile/import', { method: 'POST', body: JSON.stringify(payload) })
+    },
     startNegotiation: (body, idempotencyKey) =>
       request('/api/negotiations', { method: 'POST', body: JSON.stringify(body) }, idempotencyKey),
     getNegotiation: (id) => request(`/api/negotiations/${id}`),

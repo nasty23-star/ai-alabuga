@@ -2,10 +2,12 @@ import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
+import { captureCognicoReturn } from './cognico'
 import { installApiAuth, useSessionStore } from './stores/session'
 import { initTelegram } from './telegram'
 import './styles.css'
 
+captureCognicoReturn()
 initTelegram()
 
 const app = createApp(App)

@@ -51,6 +51,23 @@ function explainIssue(loc: unknown, msg: string): string {
   return ''
 }
 
+export type CognicoProblem = 'disconnected' | 'unavailable' | 'no_transcript' | 'other'
+
+export function cognicoProblem(error: unknown): { kind: CognicoProblem; message: string } {
+  if (!(error instanceof ApiError)) return { kind: 'other', message: 'Не удалось связаться с CogniCo' }
+  const text = `${error.code} ${error.message}`.toLowerCase()
+  if (error.status === 404 || text.includes('не подключ') || text.includes('not_connected')) {
+    return { kind: 'disconnected', message: 'CogniCo не подключён' }
+  }
+  if (text.includes('недоступ') || text.includes('unavailable')) {
+    return { kind: 'unavailable', message: 'CogniCo недоступен. Заполните карточку вручную.' }
+  }
+  if (text.includes('расшифр') || text.includes('transcript')) {
+    return { kind: 'no_transcript', message: 'В записи нет расшифровки. Выберите другую встречу.' }
+  }
+  return { kind: 'other', message: error.message || 'Не удалось выполнить запрос' }
+}
+
 export function explainApiError(error: ApiError, fallback: string): string {
   const raw = error.details.errors
   if (Array.isArray(raw)) {

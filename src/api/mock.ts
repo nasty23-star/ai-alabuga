@@ -172,20 +172,29 @@ interface Db {
   users: UserRow[]
   tokens: Record<string, string>
   profiles: Record<string, CounterpartProfile>
+  cognico: Record<string, boolean>
   negotiations: StoredNegotiation[]
   shares: ShareRow[]
   idempotency: Record<string, unknown>
 }
 
 const STORAGE_KEY = 'arena-mock-db'
-const emptyDb = (): Db => ({ users: [], tokens: {}, profiles: {}, negotiations: [], shares: [], idempotency: {} })
+const emptyDb = (): Db => ({ users: [], tokens: {}, profiles: {}, cognico: {}, negotiations: [], shares: [], idempotency: {} })
+
+const COGNICO_RECORDINGS = [
+  { id: 'meet-budget', title: 'Бюджет на квартал', recorded_at: '2026-09-18T11:00:00Z' },
+  { id: 'meet-contract', title: 'Согласование договора', recorded_at: '2026-09-12T15:30:00Z' },
+  { id: 'meet-empty', title: 'Планёрка без расшифровки', recorded_at: '2026-09-02T09:10:00Z' },
+]
 
 function load(): Db {
   try {
     const raw = localStorage.getItem(STORAGE_KEY) ?? sessionStorage.getItem(STORAGE_KEY)
     if (!raw) return emptyDb()
     if (!localStorage.getItem(STORAGE_KEY)) localStorage.setItem(STORAGE_KEY, raw)
-    return JSON.parse(raw) as Db
+    const db = JSON.parse(raw) as Db
+    db.cognico ??= {}
+    return db
   } catch {
     return emptyDb()
   }
@@ -502,18 +511,50 @@ export function createMockApi(getToken: () => string | null, expired: () => void
       delete db.profiles[user.account.id]
       save(db)
     },
-    async importCounterpart(personId) {
-      userByToken(load(), getToken())
-      if (personId === 'unavailable') fail(503, 'source_unavailable', 'Источник недоступен')
+    async cognicoStatus() {
+      const db = load()
+      const user = userByToken(db, getToken())
+      return { connected: Boolean(db.cognico[user.account.id]) }
+    },
+    async connectCognico() {
+      const db = load()
+      const user = userByToken(db, getToken())
+      db.cognico[user.account.id] = true
+      save(db)
+      const url = new URL(location.href)
+      url.searchParams.set('cognico', 'connected')
+      if (!url.hash) url.hash = '#/scenarios'
+      return { url: url.toString() }
+    },
+    async disconnectCognico() {
+      const db = load()
+      const user = userByToken(db, getToken())
+      db.cognico[user.account.id] = false
+      save(db)
+    },
+    async cognicoRecordings() {
+      const db = load()
+      const user = userByToken(db, getToken())
+      if (!db.cognico[user.account.id]) fail(409, 'cognico_not_connected', 'CogniCo не подключён')
+      return { items: COGNICO_RECORDINGS }
+    },
+    async importCounterpart(body) {
+      await sleep(1400)
+      const db = load()
+      const user = userByToken(db, getToken())
+      if (!db.cognico[user.account.id]) fail(409, 'cognico_not_connected', 'CogniCo не подключён')
+      if (body.recording_id === 'meet-empty') fail(422, 'no_transcript', 'В записи нет расшифровки')
+      if (body.recording_id === 'unavailable') fail(503, 'cognico_unavailable', 'CogniCo недоступен')
+      const speaker = body.speaker_name?.trim()
       return {
-        display_name: 'Ирина',
-        role: 'Директор по закупкам',
-        address_form: 'formal',
-        reply_length: 'short',
-        formality: 0.7,
-        traits: ['перебивает', 'требует конкретики'],
-        sample_phrases: ['Давайте ближе к делу', 'Это не наш уровень цен'],
-        source: 'cognico',
+        display_name: speaker || 'Ирина Соколова',
+        role: 'CFO',
+        address_form: 'formal' as const,
+        reply_length: 'short' as const,
+        formality: 0.78,
+        traits: ['Прозрачный бюджет', 'Сроки', 'Отчёт совету'],
+        sample_phrases: ['Нет в бюджете', 'Покажите ROI'],
+        source: 'cognico' as const,
       }
     },
     async startNegotiation(body, idempotencyKey) {
