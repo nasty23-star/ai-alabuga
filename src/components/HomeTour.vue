@@ -9,7 +9,7 @@ type Shape = 'pill' | 'card' | 'nav'
 const steps: { selector: string; title: string; body: string; next: string; shape: Shape }[] = [
   {
     selector: '[data-tour="call"]',
-    title: 'Новый созвон (пока текстом)',
+    title: 'Новые переговоры (пока текстом)',
     body: 'Выбираешь сценарий и собеседника, а дальше говоришь голосом (пока текстом)',
     next: 'Далее',
     shape: 'pill',
@@ -24,7 +24,7 @@ const steps: { selector: string; title: string; body: string; next: string; shap
   {
     selector: '[data-tour="review"]',
     title: 'Разбор',
-    body: 'После созвона здесь появится итог и три зоны роста.',
+    body: 'После переговоров здесь появится итог и три зоны роста.',
     next: 'Далее',
     shape: 'card',
   },

@@ -139,7 +139,7 @@ function copyText(text: string) {
 async function share() {
   error.value = ''
   const scoreText = score.value == null ? '—' : String(score.value)
-  const text = `${name.value} — ${monthLabel.toLowerCase()}: ${calls.value} созвонов, итоговый балл ${scoreText}`
+  const text = `${name.value} — ${monthLabel.toLowerCase()}: ${calls.value} переговоров, итоговый балл ${scoreText}`
   if (navigator.share) {
     try {
       await navigator.share({ title: 'Ты взял эту вершину', text })
@@ -183,7 +183,7 @@ async function share() {
 
     <div class="summit-stats">
       <article class="summit-stat">
-        <span>Созвонов</span>
+        <span>Переговоров</span>
         <b>{{ calls }}</b>
       </article>
       <article class="summit-stat">

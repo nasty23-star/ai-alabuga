@@ -75,6 +75,7 @@ h2 { font-size: 18px; font-weight: 700; }
   color: #fff;
   font-size: 16px;
   font-weight: 600;
+  z-index: 1;
 }
 .btn:disabled { opacity: 0.4; }
 .btn.ghost {
@@ -1106,7 +1107,7 @@ button.pill { cursor: pointer; }
 /* .tg-app .tg-hide { display: none; } */
 
 .debrief { position: relative; background: #f5f7fb; }
-.score-screen { background: linear-gradient(180deg, #e8eefc 0%, #f7f9fd 42%, #f7f9fd 100%); }
+.score-screen { background: linear-gradient(180deg, #8FBFFE 0%, #c6deff 20%, #eaf2ff 50%, #ffffff 80%); }
 .score-head { display: flex; justify-content: flex-end; }
 .score-hero { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
 .score-pill {
@@ -1121,7 +1122,12 @@ button.pill { cursor: pointer; }
 .score-pill.deal { background: #dcfce7; color: #15803d; }
 .score-hero b { font-size: 72px; line-height: 0.95; letter-spacing: -2.4px; font-weight: 700; }
 .score-hero > span:last-child { color: #71717a; font-size: 15px; }
-.score-art { flex: 1; min-height: 180px; display: flex; align-items: flex-end; }
+.score-art {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+}
 .score-art img { width: 100%; height: 100%; object-fit: contain; object-position: center bottom; }
 .reflect { display: flex; flex-direction: column; gap: 12px; }
 .reflect p, .reflect span { font-size: 15px; font-weight: 600; line-height: 20px; }

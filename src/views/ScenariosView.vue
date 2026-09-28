@@ -94,7 +94,7 @@ async function openReview() {
     </div> -->
     <button class="btn home-call is-primary tg-hide" data-tour="call" type="button" @click="router.push('/scenarios/pick')">
       <span class="home-call-mic" aria-hidden="true"><img :src="micLime" alt="" width="21" height="21" /></span>
-      <span class="home-call-label">Новый созвон<br>(пока текстом)</span>
+      <span class="home-call-label">Новые переговоры<br>(пока текстом)</span>
       <img class="home-call-chevron" :src="chevronLight" alt="" width="20" height="22" />
     </button>
     <button class="home-own" data-tour="own" type="button" @click="router.push({ path: '/wizard', query: { persona: 'custom' } })">
@@ -111,7 +111,7 @@ async function openReview() {
     <!-- <button class="card row" type="button" @click="openReview"> -->
       <p class="card row" data-tour="review">
       <img :src="chartCard" alt="" width="22" height="22" />
-      <span><b>Здесь будет твой разбор</b><span class="muted" style="display: block">Появится после первого созвона</span></span>
+      <span><b>Здесь будет твой разбор</b><span class="muted" style="display: block">Появится после первых переговоров</span></span>
     </p>
     <!-- </button> -->
     <HomeTour v-if="showTour" @done="showTour = false" />

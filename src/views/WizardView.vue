@@ -318,7 +318,7 @@ useTelegramButtons(() => {
     }
   : {
       main: {
-        text: step.value < titles.length - 1 ? (editingFromReview.value ? 'К проверке' : 'Далее') : 'Начать созвон',
+        text: step.value < titles.length - 1 ? (editingFromReview.value ? 'К проверке' : 'Далее') : 'Начать переговоры',
         enabled: !pending.value,
         progress: pending.value,
         onClick: nextStep,
@@ -585,7 +585,7 @@ async function start() {
     <img class="bg-peaks" :src="mountains" alt="" />
     </section>
 
-    <section v-else-if="step === 1" class="stack">
+    <section v-else-if="step === 1" class="stack" style="display: grid; gap: 16px;">
       <article v-for="(issue, index) in issues" :key="index" class="deal-card">
         <div class="deal-head">
           <select class="deal-title" :name="`issue-type-${index}`" v-model="issue.type_id" @change="onIssueType(issue)">

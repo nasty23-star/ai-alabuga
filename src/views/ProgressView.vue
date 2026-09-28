@@ -18,7 +18,7 @@ useTelegramButtons(() => ({ main: null, back: null }))
         <path d="M6 46C28 44 42 38 62 40C86 42 98 24 124 26C150 28 168 16 214 12" stroke="#b7cdf6" stroke-width="2" stroke-linecap="round" stroke-dasharray="1.5 6" />
       </svg>
       <b>Здесь появится твой рост</b>
-      <p class="muted">Нужно два созвона, чтобы увидеть динамику итогового балла.</p>
+      <p class="muted">Нужно два раунда переговоров, чтобы увидеть динамику итогового балла.</p>
       <button class="btn progress-start" type="button" @click="router.push('/scenarios/pick')">Начать первое общение</button>
     </article>
     <button class="progress-metrics" type="button" @click="router.push({ name: 'glossary' })">

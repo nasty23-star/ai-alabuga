@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import backIcon from '@/assets/onboarding/back.svg'
-import peaksArt from '@/assets/onboarding/peaks.svg'
+import peakTotal from '@/assets/onboarding/peak-total.svg'
 import { ApiError, getApi } from '@/api'
 import { useTelegramButtons } from '@/telegram'
 import type { Debrief, Metric, NegotiationState } from '@/api/types'
@@ -251,13 +251,15 @@ useTelegramButtons(() => {
         <span>итоговый балл</span>
       </div>
       <div class="score-art">
-        <img :src="peaksArt" alt="" />
+        <img :src="peakTotal" alt="" />
       </div>
-      <button class="btn" type="button" @click="rateSheet = true">Смотреть разбор</button>
+      <button class="btn btn-cta" type="button" @click="rateSheet = true">Смотреть разбор</button>
+
+
       <div v-if="rateSheet" class="sheet-backdrop" @click.self="rateSheet = false">
         <section class="sheet">
           <h2>Оценишь ценность сделки?</h2>
-          <p class="muted">7 коротких вопросов, около минуты. Руководитель увидит не только цифры, но и как прошли переговоры</p>
+          <p class="muted">7 коротких вопросов, около минуты. Можно увидеть не только цифры, но и как прошли переговоры</p>
           <button class="btn" type="button" @click="rateSheet = false; step = 'feedback'">Да, оценить</button>
           <button class="btn ghost" type="button" @click="rateSheet = false; step = 'summary'">Нет, сразу к разбору</button>
         </section>
@@ -339,7 +341,7 @@ useTelegramButtons(() => {
         </div>
       </template>
       <button class="linkish debrief-link" type="button" @click="router.push({ name: 'glossary' })">Что значат метрики</button>
-      <button class="btn tg-hide" type="button" @click="again">Новый созвон</button>
+      <button class="btn tg-hide" type="button" @click="again">Новые переговоры</button>
       <button class="btn ghost" type="button" @click="again">Новая попытка</button>
     </template>
 
@@ -372,7 +374,7 @@ useTelegramButtons(() => {
 
     <div v-if="sheet" class="sheet-backdrop" @click.self="sheet = false">
       <section class="sheet">
-        <h2>Поделиться с руководителем</h2>
+        <h2>Поделиться</h2>
         <p class="muted">Увидит итоговый балл и «Итог сделки». «Мой рост» и транскрипт скрыты, пока их не включить.</p>
         <p class="muted">Ссылка действует</p>
         <div class="ttl">
