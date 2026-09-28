@@ -57,10 +57,6 @@ useTelegramButtons(() => ({ main: null, back: leave }))
     </label>
 
     <section v-if="mvp.length" class="glossary-block">
-      <div class="glossary-section">
-        <h2>Считаем в MVP</h2>
-        <i />
-      </div>
       <article class="card glossary-card">
         <div v-for="item in mvp" :key="item.en" class="glossary-row">
           <i />
