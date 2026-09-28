@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { ApiError, getApi } from '@/api'
 import backIcon from '@/assets/onboarding/back.svg'
 import replayIcon from '@/assets/onboarding/replay.png'
+import personaCpo from '@/assets/onboarding/persona-toxic-cpo.png'
+import personaCeo from '@/assets/onboarding/persona-busy-ceo.png'
 import type { AgreedTerm, NegotiationState, TurnEvent } from '@/api/types'
 
 const props = defineProps<{
@@ -23,8 +25,6 @@ const error = ref('')
 const deal = ref<{ terms: AgreedTerm[]; summary: string } | null>(null)
 const idempotencyKey = ref(crypto.randomUUID())
 const scroller = ref<HTMLElement | null>(null)
-
-const personaAvatar = computed(() => props.personaCeo || props.personaCpo || '')
 
 async function load() {
   state.value = await getApi().getNegotiation(id.value)
@@ -143,23 +143,32 @@ onMounted(async () => {
   <main class="screen chat" style="padding-bottom: 16px">
     <header class="header-sticky">
       <div class="pick-header">
+        <span class="container">
         <button class="back" type="button" @click="back">
           <img :src="backIcon" alt="" width="20" height="20" />
         </button>
-       <span class="container">
+       
         <img
-          v-if="personaAvatar"
-          class="persona-avatar"
-          :src="personaAvatar"
-          alt=""
-          width="50"
-          height="50"
-        />
-        <span
-          v-else
-          class="persona-avatar persona-avatar--empty"
-          aria-hidden="true"
-        ></span>
+  v-if="state?.counterpart.persona_id === 'toxic_cpo'"
+  class="persona-avatar"
+  :src="personaCpo"
+  alt=""
+  width="50"
+  height="50"
+/>
+<img
+  v-else-if="state?.counterpart.persona_id === 'busy_ceo'"
+  class="persona-avatar"
+  :src="personaCeo"
+  alt=""
+  width="50"
+  height="50"
+/>
+<span
+  v-else
+  class="persona-avatar persona-avatar--empty"
+  aria-hidden="true"
+></span>
 
         <b>{{ state?.counterpart.name }}</b>
         </span>
