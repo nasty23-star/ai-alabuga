@@ -22,14 +22,14 @@ function submitAuth() {
   void run(() => mode.value === 'in' ? session.signIn(login.value, password.value) : session.signUp(login.value, password.value))
 }
 
-useTelegramButtons(() => fromTelegram
-  ? { main: null, back: null }
-  : step.value === 'hero'
-  ? { main: { text: 'Начать восхождение', onClick: () => { step.value = 'form' } }, back: null }
-  : {
-      main: { text: 'Далее', enabled: !pending.value, progress: pending.value, onClick: submitAuth },
-      back: () => { step.value = 'hero' },
-    })
+// useTelegramButtons(() => fromTelegram
+//   ? { main: null, back: null }
+//   : step.value === 'hero'
+//   ? { main: { text: 'Начать восхождение', onClick: () => { step.value = 'form' } }, back: null }
+//   : {
+//       main: { text: 'Далее', enabled: !pending.value, progress: pending.value, onClick: submitAuth },
+//       back: () => { step.value = 'hero' },
+//     })
 
 function afterAuth() {
   if (session.greetOnEntry && session.onboarded) return { name: 'welcome' as const }

@@ -111,12 +111,12 @@ async function leave() {
   await router.push({ name: 'debrief', params: { id: id.value } })
 }
 
-useTelegramButtons(() => ({
-  main: deal.value
-    ? { text: 'Принять', enabled: !pending.value, progress: pending.value, onClick: () => { void accept() } }
-    : { text: 'Ход', enabled: !pending.value && draft.value.trim().length > 0, progress: pending.value, onClick: () => { void send() } },
-  back: () => { void router.push('/scenarios') },
-}))
+// useTelegramButtons(() => ({
+//   main: deal.value
+//     ? { text: 'Принять', enabled: !pending.value, progress: pending.value, onClick: () => { void accept() } }
+//     : { text: 'Ход', enabled: !pending.value && draft.value.trim().length > 0, progress: pending.value, onClick: () => { void send() } },
+//   back: () => { void router.push('/scenarios') },
+// }))
 
 onMounted(async () => {
   try {
