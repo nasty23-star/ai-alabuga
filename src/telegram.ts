@@ -41,6 +41,18 @@ export function closeMiniApp() {
   window.Telegram?.WebApp?.close()
 }
 
+function hideTelegramButtons() {
+  const app = window.Telegram?.WebApp
+  if (!app) return
+  if (mainClick) app.MainButton.offClick(mainClick)
+  mainClick = null
+  app.MainButton.hideProgress()
+  app.MainButton.hide()
+  if (backClick) app.BackButton.offClick(backClick)
+  backClick = null
+  app.BackButton.hide()
+}
+
 export function initTelegram() {
   const app = window.Telegram?.WebApp
   if (!app) return
@@ -50,42 +62,15 @@ export function initTelegram() {
   app.setHeaderColor('#c5daf8')
   app.setBackgroundColor('#f5f7fb')
   app.setBottomBarColor?.('#ffffff')
-  app.MainButton.setParams({ color: '#1a5cff', text_color: '#ffffff' })
+  hideTelegramButtons()
 }
 
-export function setMainButton(action: MainAction | null) {
-  const main = window.Telegram?.WebApp?.MainButton
-  if (!main) return
-  if (mainClick) main.offClick(mainClick)
-  mainClick = null
-  if (!action) {
-    main.hideProgress()
-    main.hide()
-    return
-  }
-  main.setParams({ color: '#1a5cff', text_color: '#ffffff', is_active: action.enabled !== false })
-  main.setText(action.text)
-  if (action.progress) main.showProgress(false)
-  else main.hideProgress()
-  if (action.enabled === false) main.disable()
-  else main.enable()
-  mainClick = action.onClick
-  main.onClick(mainClick)
-  main.show()
+export function setMainButton(_action: MainAction | null) {
+  hideTelegramButtons()
 }
 
-export function setBackButton(onBack: (() => void) | null) {
-  const back = window.Telegram?.WebApp?.BackButton
-  if (!back) return
-  if (backClick) back.offClick(backClick)
-  backClick = null
-  if (!onBack) {
-    back.hide()
-    return
-  }
-  backClick = onBack
-  back.onClick(backClick)
-  back.show()
+export function setBackButton(_onBack: (() => void) | null) {
+  hideTelegramButtons()
 }
 
 export function useTelegramButtons(read: () => { main: MainAction | null; back: (() => void) | null }) {
