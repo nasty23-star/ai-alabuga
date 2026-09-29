@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ApiError, getApi } from '@/api'
 import { useTrainingsStore } from '@/stores/trainings'
@@ -27,6 +27,23 @@ const error = ref('')
 const deal = ref<{ terms: AgreedTerm[]; summary: string } | null>(null)
 const idempotencyKey = ref(crypto.randomUUID())
 const scroller = ref<HTMLElement | null>(null)
+const thread = ref<HTMLElement | null>(null)
+let threadObserver: ResizeObserver | null = null
+
+function pinToBottom() {
+  const el = scroller.value
+  if (el) {
+    const next = el.scrollHeight - el.clientHeight
+    if (next > 0) {
+      if (el.scrollTop < next - 1) el.scrollTop = next
+      return
+    }
+  }
+  const page = document.scrollingElement
+  if (!page) return
+  const pageNext = page.scrollHeight - page.clientHeight
+  if (pageNext > 1 && page.scrollTop < pageNext - 1) page.scrollTop = pageNext
+}
 
 async function load() {
   state.value = await getApi().getNegotiation(id.value)
@@ -56,7 +73,8 @@ function apply(event: TurnEvent) {
 
 async function scrollDown() {
   await nextTick()
-  scroller.value?.scrollTo({ top: scroller.value.scrollHeight, behavior: 'smooth' })
+  pinToBottom()
+  requestAnimationFrame(pinToBottom)
 }
 
 async function send() {
@@ -132,13 +150,20 @@ function back() {
   closeWizard()
 }
 
-// Автоскролл вниз при появлении новых сообщений
+// Держим низ ленты на экране: своя реплика, ответ, поток текста и индикатор «пишет…»
 watch(
-  () => [state.value?.turns.length, live.value],
-  () => { void scrollDown() }
+  () => [state.value?.turns.length ?? 0, live.value, thinking.value, deal.value, error.value],
+  () => { void scrollDown() },
 )
 
 onMounted(async () => {
+  if (typeof ResizeObserver !== 'undefined') {
+    threadObserver = new ResizeObserver(() => pinToBottom())
+    if (scroller.value) threadObserver.observe(scroller.value)
+    if (thread.value) threadObserver.observe(thread.value)
+  }
+  window.addEventListener('resize', pinToBottom)
+  window.visualViewport?.addEventListener('resize', pinToBottom)
   try {
     await load()
     await scrollDown()
@@ -146,10 +171,17 @@ onMounted(async () => {
     error.value = caught instanceof ApiError ? caught.message : 'Не удалось открыть переговоры'
   }
 })
+
+onBeforeUnmount(() => {
+  threadObserver?.disconnect()
+  threadObserver = null
+  window.removeEventListener('resize', pinToBottom)
+  window.visualViewport?.removeEventListener('resize', pinToBottom)
+})
 </script>
 
 <template>
-  <main class="screen chat" style="padding-bottom: 16px">
+  <main class="screen chat">
     <header class="header-sticky">
       <div class="pick-header">
         <span class="container">
@@ -189,20 +221,19 @@ onMounted(async () => {
       </div>
     </header>
 
-    <div ref="scroller" class="stack" style="flex: 1; overflow: auto; min-height: 240px;">
-      <p
-        v-for="turn in state?.turns ?? []"
-        :key="`${turn.index}-${turn.speaker}`"
-        class="bubble"
-        :class="turn.speaker"
-      >
-        {{ turn.text }}
-      </p>
-<p v-if="thinking"
-      
-      class="bubble counterpart">{{state?.counterpart.name || 'Собеседник'}} пишет…</p>
-      
-      <p v-if="live" class="bubble counterpart">{{ live }}</p>
+    <div ref="scroller" class="thread">
+      <div ref="thread" class="thread-body">
+        <p
+          v-for="turn in state?.turns ?? []"
+          :key="`${turn.index}-${turn.speaker}`"
+          class="bubble"
+          :class="turn.speaker"
+        >
+          {{ turn.text }}
+        </p>
+        <p v-if="thinking" class="bubble counterpart">{{ state?.counterpart.name || 'Собеседник' }} пишет…</p>
+        <p v-if="live" class="bubble counterpart">{{ live }}</p>
+      </div>
     </div>
 
     <article v-if="deal" class="card-stack">
@@ -231,3 +262,38 @@ onMounted(async () => {
     </form>
   </main>
 </template>
+
+<style scoped>
+.chat {
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+.thread {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overscroll-behavior: contain;
+  overflow-anchor: none;
+}
+
+.thread-body {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-top: auto;
+}
+
+.composer {
+  flex: none;
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+}
+</style>
