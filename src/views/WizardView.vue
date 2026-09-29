@@ -789,17 +789,6 @@ async function start() {
           <span v-for="trait in profile.traits" :key="trait" class="check-tag">{{ trait }}</span>
         </div>
       </div>
-      <div class="check-block">
-        <span class="muted">Типичные возражения</span>
-        <div class="own-chips">
-          <button v-for="(phrase, index) in profile.sample_phrases" :key="`${phrase}-${index}`" type="button" class="own-chip" @click="removePhrase(index)">«{{ phrase }}»</button>
-          <button v-if="!addingPhrase && profile.sample_phrases.length < 5" class="own-chip add" type="button" @click="addingPhrase = true">+ ещё</button>
-        </div>
-        <form v-if="addingPhrase" class="own-add" @submit.prevent="addPhrase">
-          <input v-model="phraseDraft" placeholder="Возражение" maxlength="200" />
-          <button class="own-pull" type="submit">Добавить</button>
-        </form>
-      </div>
     </article>
     <p class="check-note">{{ profile.source === 'cognico' ? 'Источники: звонки и документы. Поправь, если что-то не так.' : 'Карточка заполнена вручную. Поправь, если что-то не так.' }}</p>
     <button class="btn" type="button" :disabled="pending" @click="confirmCounterpart">Подтвердить собеседника</button>
@@ -824,16 +813,6 @@ async function start() {
       <div class="check-block">
         <span class="muted">Стиль</span>
         <b>{{ styleLine }}</b>
-      </div>
-      <div v-if="profile.traits.length" class="check-block">
-        <span class="muted">Что для него важно</span>
-        <div class="own-chips">
-          <span v-for="trait in profile.traits" :key="trait" class="check-tag">{{ trait }}</span>
-        </div>
-      </div>
-      <div v-if="profile.sample_phrases.length" class="check-block">
-        <span class="muted">Типичные возражения</span>
-        <b>«{{ profile.sample_phrases.join('» · «') }}»</b>
       </div>
     </article>
     <p class="check-note">{{ profile.source === 'cognico' ? 'Источники: звонки и документы. Поправь, если что-то не так.' : 'Карточка заполнена вручную. Поправь, если что-то не так.' }}</p>
@@ -909,17 +888,6 @@ async function start() {
     <label class="own-name">
       <input v-model="nameLine" placeholder="[Имя], CFO" />
     </label>
-    <section class="own-phrases">
-      <b>Типичные возражения</b>
-      <div class="own-chips">
-        <button v-for="(phrase, index) in profile.sample_phrases" :key="`${phrase}-${index}`" type="button" class="own-chip" @click="removePhrase(index)">«{{ phrase }}»</button>
-        <button v-if="!addingPhrase && profile.sample_phrases.length < 5" class="own-chip add" type="button" @click="addingPhrase = true">+ ещё</button>
-      </div>
-      <form v-if="addingPhrase" class="own-add" @submit.prevent="addPhrase">
-        <input v-model="phraseDraft" placeholder="Возражение" maxlength="200" />
-        <button class="own-pull" type="submit">Добавить</button>
-      </form>
-    </section>
     <div class="btn-actions">
       <button class="btn" type="button" :disabled="pending" @click="saveProfile">Сохранить собеседника</button>
     </div>
