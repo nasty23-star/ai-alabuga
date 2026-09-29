@@ -25,6 +25,8 @@ const thinking = ref(false)
 const live = ref('')
 const error = ref('')
 const deal = ref<{ terms: AgreedTerm[]; summary: string } | null>(null)
+const endOpen = ref(false)
+const ending = ref(false)
 const idempotencyKey = ref(crypto.randomUUID())
 const scroller = ref<HTMLElement | null>(null)
 const thread = ref<HTMLElement | null>(null)
@@ -136,10 +138,29 @@ async function reject() {
   deal.value = null
 }
 
+function askToEnd() {
+  if (ending.value) return
+  error.value = ''
+  endOpen.value = true
+}
+
+function stay() {
+  if (ending.value) return
+  endOpen.value = false
+}
+
 async function leave() {
-  await getApi().walkAway(id.value)
-  void trainings.refresh().catch(() => {})
-  await router.push({ name: 'debrief', params: { id: id.value } })
+  if (ending.value) return
+  ending.value = true
+  error.value = ''
+  try {
+    await getApi().walkAway(id.value)
+    void trainings.refresh().catch(() => {})
+    await router.push({ name: 'debrief', params: { id: id.value } })
+  } catch (caught) {
+    ending.value = false
+    error.value = caught instanceof ApiError ? caught.message : 'Не удалось завершить переговоры'
+  }
 }
 
 function closeWizard() {
@@ -148,6 +169,10 @@ function closeWizard() {
 
 function back() {
   closeWizard()
+}
+
+function onKey(event: KeyboardEvent) {
+  if (event.key === 'Escape') stay()
 }
 
 // Держим низ ленты на экране: своя реплика, ответ, поток текста и индикатор «пишет…»
@@ -164,6 +189,7 @@ onMounted(async () => {
   }
   window.addEventListener('resize', pinToBottom)
   window.visualViewport?.addEventListener('resize', pinToBottom)
+  window.addEventListener('keydown', onKey)
   try {
     await load()
     await scrollDown()
@@ -177,6 +203,7 @@ onBeforeUnmount(() => {
   threadObserver = null
   window.removeEventListener('resize', pinToBottom)
   window.visualViewport?.removeEventListener('resize', pinToBottom)
+  window.removeEventListener('keydown', onKey)
 })
 </script>
 
@@ -213,7 +240,7 @@ onBeforeUnmount(() => {
 
         <b>{{ state?.counterpart.name }}</b>
         </span>
-        <button class="back" type="button" aria-label="Закрыть" @click="closeWizard">
+        <button class="back" type="button" aria-label="Закрыть" @click="askToEnd">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
           </svg>
@@ -260,16 +287,58 @@ onBeforeUnmount(() => {
       />
       <button class="btn tg-hide" type="submit" :disabled="pending"><img :src="replayIcon" alt="Отправить" /></button>
     </form>
+
+    <div v-if="endOpen" class="sheet-backdrop end-backdrop" @click.self="stay">
+      <section class="sheet end-sheet" role="dialog" aria-modal="true" aria-labelledby="end-title">
+        <span class="end-handle" aria-hidden="true" />
+        <h2 id="end-title">Завершить переговоры</h2>
+        <p class="muted">Диалог остановится, и откроется разбор этой тренировки.</p>
+        <p v-if="error" class="error">{{ error }}</p>
+        <button class="btn tg-hide" type="button" :disabled="ending" @click="leave">Завершить</button>
+        <button class="linkish" type="button" :disabled="ending" @click="stay">Продолжить диалог</button>
+      </section>
+    </div>
   </main>
 </template>
 
 <style scoped>
 .chat {
+  position: relative;
   height: 100dvh;
   max-height: 100dvh;
   min-height: 0;
   overflow: hidden;
   padding-bottom: 0;
+}
+
+.end-backdrop {
+  animation: end-fade 160ms ease;
+}
+
+.end-sheet {
+  padding: 10px 16px calc(20px + env(safe-area-inset-bottom));
+  animation: end-rise 220ms ease;
+}
+
+.end-sheet h2,
+.end-sheet .muted {
+  text-align: center;
+}
+
+.end-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 99px;
+  background: #e4e4e7;
+  margin: 0 auto 4px;
+}
+
+@keyframes end-fade {
+  from { opacity: 0; }
+}
+
+@keyframes end-rise {
+  from { transform: translateY(24px); }
 }
 
 .thread {
