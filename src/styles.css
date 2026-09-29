@@ -1258,9 +1258,9 @@ button.pill { cursor: pointer; }
   box-shadow: 0 8px 10px rgb(30 64 175 / 8%);
 }
 .score-card b { font-size: 64px; line-height: 0.9; letter-spacing: -2.4px; }
-.score-card span { color: var(--muted); font-size: 14px; font-weight: 600; }
+.score-card span { font-weight: 700; }
 .score-row { flex-direction: row; align-items: center; gap: 12px; }
-.score-row b { font-size: 56px; }
+.score-row b { font-size: 32px; }
 .score-row > span { display: flex; flex-direction: column; gap: 2px; flex: 1; }
 .score-row > span .muted { font-size: 12px; font-weight: 500; }
 .score-row .score-pill { font-style: normal; }
@@ -1281,13 +1281,15 @@ button.pill { cursor: pointer; }
   color: #52525b;
 }
 .review-tabs button.on { background: #fff; color: var(--ink); box-shadow: 0 2px 6px rgb(30 64 175 / 10%); }
-.start-here { display: flex; flex-direction: column; gap: 10px; }
-.start-here header { display: flex; justify-content: space-between; align-items: center; }
-.start-here button {
+.start-here { display: flex; flex-direction: column; gap: 16px; }
+.start-here header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.start-here header b { font-size: 16px; }
+.start-here header .muted { font-size: 13px; font-weight: 500; }
+.start-row {
   display: grid;
-  grid-template-columns: 28px 1fr auto;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
   gap: 10px;
-  align-items: center;
+  align-items: start;
   width: 100%;
   border: 0;
   background: transparent;
@@ -1295,16 +1297,28 @@ button.pill { cursor: pointer; }
   text-align: left;
 }
 .start-here i {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: #e8f0ff;
-  color: var(--blue);
+  background: var(--blue);
+  color: #fff;
   font-style: normal;
+  font-size: 13px;
   font-weight: 700;
 }
+.start-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.start-copy b { font-size: 15px; line-height: 20px; font-weight: 650; }
+.start-copy .hint { color: var(--muted); font-size: 13px; line-height: 18px; font-weight: 500; }
+.start-value {
+  color: #e23d4a;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.start-value.is-empty { color: var(--muted); font-weight: 600; }
 .growth-note b {
   display: block;
   margin: 6px 0;
@@ -1318,25 +1332,23 @@ button.pill { cursor: pointer; }
 }
 
 .metric {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 6px;
   min-height: 118px;
   width: 100%;
-  border: 0;
-  background: #fff;
+  border: 1px solid #b7cbe8;
+  background: #e7eefb;
   border-radius: 20px;
   padding: 14px;
   text-align: left;
-  box-shadow: 0 4px 7px rgb(35 70 160 / 8%);
+  box-shadow: none;
 }
-.metric span { font-size: 13px; line-height: 16px; font-weight: 600; }
-.metric b { font-size: 22px; line-height: 1; letter-spacing: -0.4px; }
-.metric em { margin-top: auto; font-style: normal; font-size: 12px; font-weight: 600; }
-.metric em.good { color: #16a34a; }
-.metric em.muted { color: var(--muted); font-weight: 500; }
-.metric { position: relative; }
+.metric span { font-size: 14px; line-height: 18px; font-weight: 600; }
+.metric b { margin-top: 8px; font-size: 28px; line-height: 1.05; letter-spacing: -0.6px; }
+.metric em { margin-top: 2px; font-style: normal; font-size: 12px; line-height: 16px; font-weight: 500; color: var(--muted); }
 .metric-open {
   display: flex;
   flex-direction: column;
@@ -1357,15 +1369,12 @@ button.pill { cursor: pointer; }
   height: 22px;
   border: 0;
   border-radius: 50%;
-  background: #e8f0ff;
+  background: transparent;
   color: #1a5cff;
   display: grid;
   place-items: center;
   padding: 0;
 }
-.start-row { display: flex; align-items: center; gap: 8px; }
-.start-row > button:first-child { flex: 1; min-width: 0; }
-.start-here .metric-info { position: static; width: 22px; flex: none; display: grid; }
 .glossary-title { font-size: 28px; letter-spacing: -0.7px; }
 .glossary-search {
   display: flex;
@@ -1533,6 +1542,8 @@ h2.glossary-section.planned { font-weight: 700; }
   display: flex;
   flex-direction: column;
   gap: 12px;
+  position: sticky;
+  bottom: 53px;
 }
 .sheet .linkish { align-self: center; }
 .share-toggle { display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
