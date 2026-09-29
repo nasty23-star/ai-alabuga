@@ -1379,7 +1379,6 @@ h2.glossary-section { font-size: 16px; font-weight: 700; }
 }
 .train-empty img {
   width: calc(100% + 36px);
-  max-height: 140px;
   margin: 0 -18px;
   object-fit: cover;
   object-position: center 70%;
