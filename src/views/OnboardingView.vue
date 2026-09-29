@@ -10,28 +10,21 @@ import liteHills from '@/assets/onboarding/lite-hills.svg'
 import { ApiError } from '@/api'
 import type { SphereId } from '@/api/types'
 import { requestHomeTour } from '@/homeTour'
+import { PROFILE_SPHERES } from '@/spheres'
 import { useSessionStore } from '@/stores/session'
 import { useTelegramButtons } from '@/telegram'
-
-const spheres: { id: SphereId; title: string }[] = [
-  { id: 'procurement', title: 'Закупки' },
-  { id: 'sales', title: 'Продажи' },
-  { id: 'hiring', title: 'Найм' },
-  { id: 'management', title: 'Управление' },
-  { id: 'founder', title: 'Основатель' },
-]
 
 const session = useSessionStore()
 const router = useRouter()
 const slide = ref(0)
 const name = ref(session.account?.display_name ?? '')
-const selected = ref<SphereId[]>([...(session.account?.spheres ?? [])])
+const selected = ref<SphereId | null>(session.account?.spheres[0] ?? null)
 const error = ref('')
 const pending = ref(false)
 const slides = [0, 1, 2]
 
-function toggle(id: SphereId) {
-  selected.value = selected.value.includes(id) ? selected.value.filter((item) => item !== id) : [...selected.value, id]
+function chooseSphere(id: SphereId) {
+  selected.value = id
 }
 
 function next() {
@@ -43,7 +36,7 @@ async function save() {
   error.value = ''
   pending.value = true
   try {
-    await session.saveProfile(name.value.trim() || 'Мистер X', selected.value)
+    await session.saveProfile(name.value.trim() || 'Мистер X', selected.value ? [selected.value] : [])
     requestHomeTour()
     await router.push('/scenarios')
   } catch (caught) {
@@ -173,10 +166,10 @@ function back() {
     <form style="display: flex; flex-direction: column; gap: 6px; height: 100%; margin-top: 16px" @submit.prevent="save">
     <h1>Расскажи о себе</h1>
     <p class="muted">Подберём сценарии под твою работу</p>
-      <label class="field" style="margin-top: 24px;">Как к тебе обращаться<input v-model="name" placeholder="Введите имя" /></label>
-      <!-- <div class="row">
-        <button v-for="sphere in spheres" :key="sphere.id" type="button" class="chip" :class="{ on: selected.includes(sphere.id) }" @click="toggle(sphere.id)">{{ sphere.title }}</button>
-      </div> -->
+      <label class="field" style="margin-top: 24px;">Имя<input v-model="name" name="display_name" autocomplete="name" placeholder="маргарита" /></label>
+      <div class="row profile-spheres">
+        <button v-for="sphere in PROFILE_SPHERES" :key="sphere.id" type="button" class="chip" :class="{ on: selected === sphere.id }" @click="chooseSphere(sphere.id)">{{ sphere.title }}</button>
+      </div>
       <p v-if="error" class="error">{{ error }}</p>
       <div class="btn-actions">
         <button class="btn ghost" type="button" @click="later">Пропустить</button>

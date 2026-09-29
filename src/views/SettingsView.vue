@@ -2,8 +2,10 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ApiError, getApi } from '@/api'
+import type { SphereId } from '@/api/types'
 import backIcon from '@/assets/onboarding/back.svg'
 import chevron from '@/assets/onboarding/chevron.svg'
+import { PROFILE_SPHERES } from '@/spheres'
 import { useGamificationStore } from '@/stores/gamification'
 import { useSessionStore } from '@/stores/session'
 import { closeMiniApp } from '@/telegram'
@@ -17,8 +19,34 @@ const error = ref('')
 const message = ref('')
 const displayName = computed(() => session.account?.display_name?.trim() ?? '')
 const initial = computed(() => displayName.value.slice(0, 1).toUpperCase())
+const name = ref(session.account?.display_name ?? '')
+const sphere = ref<SphereId | null>(session.account?.spheres[0] ?? null)
+const saving = ref(false)
 
 onMounted(() => gamification.hydrate())
+
+function chooseSphere(id: SphereId) {
+  sphere.value = id
+}
+
+async function saveProfile() {
+  error.value = ''
+  message.value = ''
+  const displayNameValue = name.value.trim()
+  if (!displayNameValue) {
+    error.value = 'Укажите имя'
+    return
+  }
+  saving.value = true
+  try {
+    await session.saveProfile(displayNameValue, sphere.value ? [sphere.value] : [])
+    message.value = 'Профиль сохранён'
+  } catch (caught) {
+    error.value = caught instanceof ApiError ? caught.message : 'Не удалось сохранить'
+  } finally {
+    saving.value = false
+  }
+}
 
 async function upgrade() {
   error.value = ''
@@ -66,6 +94,14 @@ async function openLinks() {
       <b>{{ displayName }}</b>
       <b v-if="session.account?.is_guest">Гость</b>
     </div>
+
+    <form class="card profile-form" @submit.prevent="saveProfile">
+      <label class="field">Имя<input v-model="name" name="display_name" autocomplete="name" placeholder="маргарита" /></label>
+      <div class="row profile-spheres">
+        <button v-for="item in PROFILE_SPHERES" :key="item.id" type="button" class="chip" :class="{ on: sphere === item.id }" @click="chooseSphere(item.id)">{{ item.title }}</button>
+      </div>
+      <button class="btn" type="submit" :disabled="saving">Сохранить</button>
+    </form>
 
     <section class="profile-card">
       <div class="profile-game">
