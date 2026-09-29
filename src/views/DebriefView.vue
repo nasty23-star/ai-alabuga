@@ -1,6 +1,19 @@
+<script lang="ts">
+interface DebriefSnapshot {
+  debrief: import('@/api/types').Debrief
+  negotiation: import('@/api/types').NegotiationState
+  step: 'score' | 'feedback' | 'summary' | 'metric' | 'links'
+  reviewTab: 'deal' | 'growth'
+  selectedKey: string
+  scrollY: number
+}
+
+const debriefSnapshots = new Map<string, DebriefSnapshot>()
+</script>
+
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, nextTick, onMounted, ref } from 'vue'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import backIcon from '@/assets/onboarding/back.svg'
 import peakTotal from '@/assets/onboarding/peak-total.svg'
 import { ApiError, getApi } from '@/api'
@@ -69,6 +82,21 @@ const copied = ref(false)
 const links = ref<ShareItem[]>([])
 const reviewTab = ref<'deal' | 'growth'>('deal')
 
+function cameBackFromGlossary() {
+  if (route.query.review === '1') return true
+  const forward = window.history.state?.forward
+  return typeof forward === 'string' && forward.includes('glossary')
+}
+
+const remembered = cameBackFromGlossary() ? debriefSnapshots.get(id.value) : undefined
+if (remembered) {
+  debrief.value = remembered.debrief
+  negotiation.value = remembered.negotiation
+  step.value = remembered.step
+  reviewTab.value = remembered.reviewTab
+  selectedKey.value = remembered.selectedKey
+}
+
 const DEAL_KEYS = new Set(['own_outcome', 'batna_gain', 'reservation_point_discipline', 'concession_discipline'])
 
 const selected = computed(() => debrief.value?.metrics.find((metric) => metric.key === selectedKey.value) ?? null)
@@ -119,6 +147,14 @@ const startHere = computed(() => {
 })
 
 onMounted(async () => {
+  if (remembered) {
+    await nextTick()
+    requestAnimationFrame(() => {
+      const page = document.scrollingElement
+      if (page) page.scrollTop = remembered.scrollY
+    })
+    return
+  }
   try {
     const [report, state] = await Promise.all([getApi().debrief(id.value), getApi().getNegotiation(id.value)])
     debrief.value = report
@@ -131,6 +167,18 @@ onMounted(async () => {
   } catch (caught) {
     error.value = caught instanceof ApiError ? caught.message : 'Разбор недоступен'
   }
+})
+
+onBeforeRouteLeave(() => {
+  if (!debrief.value || !negotiation.value) return
+  debriefSnapshots.set(id.value, {
+    debrief: debrief.value,
+    negotiation: negotiation.value,
+    step: step.value,
+    reviewTab: reviewTab.value,
+    selectedKey: selectedKey.value,
+    scrollY: document.scrollingElement?.scrollTop ?? 0,
+  })
 })
 
 function formatMetric(metric: Metric) {
