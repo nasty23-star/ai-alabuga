@@ -67,10 +67,10 @@ function deltaLabel(value: number) {
       </svg>
       <template v-if="scored.length >= 2 && latest != null">
         <b>Итоговый балл {{ latest }}</b>
-        <p class="muted">Средний {{ average }} по {{ scored.length }} созвонам<span v-if="delta != null"> · {{ deltaLabel(delta) }} к прошлому</span></p>
+        <p class="muted">Средний {{ average }} по {{ scored.length }} переговорам<span v-if="delta != null"> · {{ deltaLabel(delta) }} к прошлому</span></p>
       </template>
       <template v-else-if="finished.length">
-        <b>{{ latest != null ? `Первый балл — ${latest}` : 'Первый созвон уже есть' }}</b>
+        <b>{{ latest != null ? `Первый балл — ${latest}` : 'Первые переговоры уже есть' }}</b>
         <p class="muted">Нужно два диалога с итоговым баллом, чтобы увидеть динамику.</p>
       </template>
       <template v-else>

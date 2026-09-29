@@ -77,7 +77,7 @@ function scoreOf(item: NegotiationListItem) {
     <h1>Мои тренировки</h1>
     <button class="btn home-call is-primary tg-hide" type="button" @click="router.push('/scenarios/pick')">
       <span class="home-call-mic" aria-hidden="true"><img :src="micLime" alt="" width="21" height="21" /></span>
-      <span class="home-call-label">Новый созвон<br>(пока текстом)</span>
+      <span class="home-call-label">Новые переговоры</span>
       <img class="home-call-chevron" :src="chevronLight" alt="" width="20" height="22" />
     </button>
     <p v-if="error" class="error">{{ error }}</p>
@@ -85,7 +85,7 @@ function scoreOf(item: NegotiationListItem) {
     <article v-else-if="!trainings.items.length && !error" class="train-empty">
       <img class="bg-peaks" :src="mountains" alt="" />
       <b>Здесь будет история тренировок</b>
-      <p class="muted">После каждого созвона — итоговый балл и разбор. Первый займёт около 10 минут.</p>
+      <p class="muted">После каждых переговоров — итоговый балл и разбор. Первый займёт около 10 минут.</p>
     </article>
     <div v-else class="train-list">
       <button v-for="item in trainings.items" :key="item.id" class="train-row" type="button" @click="open(item)">
