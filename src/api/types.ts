@@ -220,9 +220,10 @@ export interface MetricOrigin {
 export interface Metric {
   key: string
   title: string
-  value?: number | boolean
-  unit: MetricUnit
-  zone: Zone
+  hint?: string | null
+  value?: number | boolean | null
+  unit: MetricUnit | null
+  zone: Zone | null
   available: boolean
   unavailable_reason?: string
   origin: MetricOrigin

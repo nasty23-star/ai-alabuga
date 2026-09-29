@@ -335,21 +335,21 @@ function buildDebrief(row: StoredNegotiation): Debrief {
   const deal = row.outcome?.type === 'deal'
   const metrics: Debrief['metrics'] = [
     deal
-      ? { key: 'own_outcome', title: 'Выгода сделки', value: score ?? 0, unit: 'points', zone, available: true, origin }
-      : { key: 'own_outcome', title: 'Выгода сделки', unit: 'points', zone: 'bad', available: false, unavailable_reason: 'Сделки не было', origin },
+      ? { key: 'own_outcome', title: 'Выгода сделки', hint: '0 — твоя граница, 100 — лучшее, что давали эти переговоры', value: score ?? 0, unit: 'points', zone, available: true, origin }
+      : { key: 'own_outcome', title: 'Выгода сделки', hint: '0 — твоя граница, 100 — лучшее, что давали эти переговоры', unit: 'points', zone: 'bad', available: false, unavailable_reason: 'Сделки не было', origin },
     deal
-      ? { key: 'batna_gain', title: 'Выигрыш к альтернативе', value: Math.max(0, (score ?? 0) - 40), unit: 'points', zone: (score ?? 0) > 55 ? 'good' : 'normal', available: true, origin }
-      : { key: 'batna_gain', title: 'Выигрыш к альтернативе', unit: 'points', zone: 'bad', available: false, unavailable_reason: 'Сделки не было', origin },
-    { key: 'reservation_point_discipline', title: 'Дисциплина границы', value: deal, unit: 'boolean', zone: deal ? 'good' : 'bad', available: true, origin },
-    { key: 'concession_discipline', title: 'Дисциплина уступок', value: 62, unit: 'points', zone: 'normal', available: true, origin: { ...origin, threshold_source: 'practice' } },
-    { key: 'open_question_ratio', title: 'Доля открытых вопросов', value: 28, unit: 'percent', zone: 'normal', available: true, origin: { ...origin, threshold_source: 'academic' } },
-    { key: 'filler_density', title: 'Слова-паразиты', value: 4, unit: 'count', zone: 'good', available: true, origin: { ...origin, threshold_source: 'expert_estimate' } },
+      ? { key: 'batna_gain', title: 'Выигрыш к альтернативе', hint: 'Насколько сделка лучше плана Б', value: Math.max(0, (score ?? 0) - 40), unit: 'points', zone: (score ?? 0) > 55 ? 'good' : 'normal', available: true, origin }
+      : { key: 'batna_gain', title: 'Выигрыш к альтернативе', hint: 'Насколько сделка лучше плана Б', unit: 'points', zone: 'bad', available: false, unavailable_reason: 'Сделки не было', origin },
+    { key: 'reservation_point_discipline', title: 'Дисциплина границы', hint: 'Не согласился ли ты на условия хуже своей границы', value: deal, unit: 'boolean', zone: deal ? 'good' : 'bad', available: true, origin },
+    { key: 'concession_discipline', title: 'Дисциплина уступок', hint: 'Доля уступок, сделанных в обмен на что-то', value: 62, unit: 'points', zone: 'normal', available: true, origin: { ...origin, threshold_source: 'practice' } },
+    { key: 'open_question_ratio', title: 'Доля открытых вопросов', hint: 'Доля открытых вопросов среди всех твоих вопросов', value: 28, unit: 'percent', zone: 'normal', available: true, origin: { ...origin, threshold_source: 'academic' } },
+    { key: 'filler_density', title: 'Слова-паразиты', hint: 'Как часто в репликах звучат слова-паразиты', value: 4, unit: 'count', zone: 'good', available: true, origin: { ...origin, threshold_source: 'expert_estimate' } },
   ]
   const quote = row.turns.find((turn) => turn.speaker === 'player')?.text ?? 'Давайте зафиксируем условия.'
   return {
     outcome: row.outcome ?? { type: 'no_deal', own_outcome: null, terms: [] },
     metrics,
-    growth_areas: ['concession_discipline', 'own_outcome'],
+    growth_areas: ['open_question_ratio', 'concession_discipline', 'own_outcome'],
     guidance: [
       {
         kind: 'turning_point',

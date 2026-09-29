@@ -70,8 +70,6 @@ const copied = ref(false)
 const links = ref<ShareItem[]>([])
 const reviewTab = ref<'deal' | 'growth'>('deal')
 
-const DEAL_KEYS = new Set(['own_outcome', 'batna_gain', 'reservation_point_discipline', 'concession_discipline'])
-
 const selected = computed(() => debrief.value?.metrics.find((metric) => metric.key === selectedKey.value) ?? null)
 
 // Шкала бэкенда — 0…100, как в истории и прогрессе
@@ -116,6 +114,8 @@ const outcomeShort = computed(() => {
   return 'без сделки'
 })
 
+const DEAL_KEYS = new Set(['own_outcome', 'batna_gain', 'reservation_point_discipline', 'concession_discipline'])
+
 const dealMetrics = computed(() => (debrief.value?.metrics ?? []).filter((metric) => DEAL_KEYS.has(metric.key)))
 const growthMetrics = computed(() => (debrief.value?.metrics ?? []).filter((metric) => !DEAL_KEYS.has(metric.key)))
 const startHere = computed(() => {
@@ -123,6 +123,15 @@ const startHere = computed(() => {
   const picked = (debrief.value?.metrics ?? []).filter((metric) => areas.has(metric.key))
   return (picked.length ? picked : growthMetrics.value).slice(0, 3)
 })
+
+function growthCountLabel(count: number) {
+  const n = Math.abs(count) % 100
+  const n1 = n % 10
+  if (n > 10 && n < 20) return 'зон роста'
+  if (n1 === 1) return 'зона роста'
+  if (n1 > 1 && n1 < 5) return 'зоны роста'
+  return 'зон роста'
+}
 
 onMounted(async () => {
   try {
@@ -141,6 +150,18 @@ onMounted(async () => {
 
 // Отрицательный итог — не ноль: сделка хуже границы игрока, и это надо показать словами
 const BELOW_ZERO: Record<string, string> = { own_outcome: 'ниже границы', batna_gain: 'хуже плана Б' }
+
+function metricHint(metric: Metric) {
+  return metric.hint || COPY[metric.key]?.text || ''
+}
+
+function metricCaption(metric: Metric) {
+  if (!metric.available || metric.value == null) return ''
+  if (typeof metric.value === 'number' && metric.value < 0 && BELOW_ZERO[metric.key]) return ''
+  if (metric.unit === 'points') return 'из 100'
+  if (!metric.unit || metric.unit === 'percent' || metric.unit === 'count' || metric.unit === 'boolean') return ''
+  return metric.unit
+}
 
 function formatMetric(metric: Metric) {
   if (!metric.available) return metric.unavailable_reason ?? '—'
@@ -334,33 +355,31 @@ useTelegramButtons(() => {
       <h1>{{ negotiation?.scenario.title ?? 'Разбор' }}</h1>
       <p v-if="negotiation?.counterpart.name" class="muted">{{ negotiation.counterpart.name }}</p>
       <section class="score-card score-row">
-        <b>{{ score == null ? '—' : formatScore(score) }}</b><b>{{ '/100' }}</b>
-        <span>Итоговый балл<span class="muted">{{ belowReservation ? 'сделка хуже твоей границы' : 'из 100' }}</span></span>
+        <b>{{ score == null ? '—' : formatScore(score) }}{{ '/100' }}</b>
+        <span>Итоговый балл<span class="muted">{{ belowReservation ? 'сделка хуже твоей границы' : '' }}</span></span>
         <!-- <em class="score-pill" :class="debrief.outcome.type">{{ outcomeShort }}</em> -->
       </section>
       <section v-if="startHere.length" class="card start-here">
-        <header><b>С чего начать</b><span class="muted">топ-{{ startHere.length }}</span></header>
-        <div v-for="(metric, index) in startHere" :key="metric.key" class="start-row">
-          <button type="button" @click="openMetric(metric.key)">
-            <i>{{ index + 1 }}</i>
-            <span>{{ metric.title }}</span>
-            <b>{{ metric.available ? formatMetric(metric) : '—' }}</b>
-          </button>
-          <button class="metric-info" type="button" :aria-label="`Глоссарий: ${metric.title}`" @click="openGlossary(metric.key)">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.4"/><path d="M8 7.2V11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="5.1" r="0.7" fill="currentColor"/></svg>
-          </button>
-        </div>
+        <header><b>С чего начать</b><span class="muted">топ-{{ startHere.length }} {{ growthCountLabel(startHere.length) }}</span></header>
+        <button v-for="(metric, index) in startHere" :key="metric.key" type="button" class="start-row" @click="openMetric(metric.key)">
+          <i>{{ index + 1 }}</i>
+          <span class="start-copy">
+            <b>{{ metric.title }}</b>
+            <span v-if="metricHint(metric)" class="hint">{{ metricHint(metric) }}</span>
+          </span>
+          <b class="start-value" :class="{ 'is-empty': !metric.available }">{{ metric.available ? formatMetric(metric) : '—' }}<template v-if="metricCaption(metric)"> {{ metricCaption(metric) }}</template></b>
+        </button>
       </section>
       <div class="review-tabs" role="tablist">
-        <button type="button" role="tab" :aria-selected="reviewTab === 'deal'" :class="{ on: reviewTab === 'deal' }" @click="reviewTab = 'deal'">Итог сделки · {{ dealMetrics.length }}</button>
-        <button type="button" role="tab" :aria-selected="reviewTab === 'growth'" :class="{ on: reviewTab === 'growth' }" @click="reviewTab = 'growth'">Мой рост · {{ growthMetrics.length }}</button>
+        <button type="button" role="tab" :aria-selected="reviewTab === 'deal'" :class="{ on: reviewTab === 'deal' }" @click="reviewTab = 'deal'">Итог сделки</button>
+        <button type="button" role="tab" :aria-selected="reviewTab === 'growth'" :class="{ on: reviewTab === 'growth' }" @click="reviewTab = 'growth'">Мой рост</button>
       </div>
       <div v-if="reviewTab === 'deal'" class="metrics">
         <article v-for="metric in dealMetrics" :key="metric.key" class="metric">
           <button class="metric-open" type="button" @click="openMetric(metric.key)">
-            <em :class="metric.available ? 'good' : 'muted'">{{ metric.available ? 'считается' : 'нет данных' }}</em>
             <span>{{ metric.title }}</span>
             <b>{{ metric.available ? formatMetric(metric) : '—' }}</b>
+            <em v-if="metricCaption(metric)">{{ metricCaption(metric) }}</em>
           </button>
           <button class="metric-info" type="button" :aria-label="`Глоссарий: ${metric.title}`" @click="openGlossary(metric.key)">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.4"/><path d="M8 7.2V11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="5.1" r="0.7" fill="currentColor"/></svg>
@@ -377,9 +396,9 @@ useTelegramButtons(() => {
         <div class="metrics">
           <article v-for="metric in growthMetrics" :key="metric.key" class="metric">
             <button class="metric-open" type="button" @click="openMetric(metric.key)">
-              <em :class="metric.available ? 'good' : 'muted'">{{ metric.available ? 'считается' : 'нет данных' }}</em>
               <span>{{ metric.title }}</span>
               <b>{{ metric.available ? formatMetric(metric) : '—' }}</b>
+              <em v-if="metricCaption(metric)">{{ metricCaption(metric) }}</em>
             </button>
             <button class="metric-info" type="button" :aria-label="`Глоссарий: ${metric.title}`" @click="openGlossary(metric.key)">
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.4"/><path d="M8 7.2V11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="5.1" r="0.7" fill="currentColor"/></svg>
@@ -429,12 +448,11 @@ useTelegramButtons(() => {
           <button type="button" :class="{ on: ttlHours === 720 }" @click="ttlHours = 720">30 дней</button>
         </div>
         <label class="share-toggle">
-          <span>Показать транскрипт<small>По умолчанию скрыт</small></span>
+          <span>Показать транскрипт в разработке<small>По умолчанию скрыт</small></span>
           <button class="toggle" :class="{ on: includeTranscript }" type="button" @click="includeTranscript = !includeTranscript"><i /></button>
         </label>
         <button class="btn tg-hide" type="button" :disabled="pending" @click="sendTelegram">Отправить в Telegram</button>
         <button class="linkish" type="button" :disabled="pending" @click="copyLink">{{ copied ? 'Ссылка скопирована' : 'Скопировать ссылку' }}</button>
-        <button class="linkish" type="button" @click="sheet = false; step = 'links'">Мои ссылки</button>
       </section>
     </div>
   </main>
