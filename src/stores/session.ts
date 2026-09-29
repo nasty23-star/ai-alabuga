@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { ApiError, configureApi, getApi, syncToken } from '@/api'
 import type { Account, SphereId } from '@/api/types'
+import { requestHomeTour } from '@/homeTour'
 import { telegramDisplayName, type TelegramProfile } from '@/telegram'
 
 const TOKEN_KEY = 'arena-token'
@@ -69,6 +70,8 @@ export const useSessionStore = defineStore('session', () => {
     if (!result.account.display_name) result.account.display_name = telegramDisplayName(profile)
     applyAuth(result.token, result.account, telegramLogin(profile))
     greetOnEntry.value = result.returning === true
+    // Имя из Telegram уже есть, онбординг пропускается — тур по главной включаем сразу при первом входе
+    if (result.returning === false) requestHomeTour()
   }
 
   async function signIn(name: string, password: string) {
