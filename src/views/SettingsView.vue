@@ -96,7 +96,7 @@ async function openLinks() {
     </div>
 
     <form class="card profile-form" @submit.prevent="saveProfile">
-      <label class="field">Имя<input v-model="name" name="display_name" autocomplete="name" placeholder="маргарита" /></label>
+      <label class="field">Имя<input v-model="name" name="display_name" autocomplete="name" placeholder="Введите ваше имя" /></label>
       <div class="row profile-spheres">
         <button v-for="item in PROFILE_SPHERES" :key="item.id" type="button" class="chip" :class="{ on: sphere === item.id }" @click="chooseSphere(item.id)">{{ item.title }}</button>
       </div>

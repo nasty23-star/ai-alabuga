@@ -166,7 +166,7 @@ function back() {
     <form style="display: flex; flex-direction: column; gap: 6px; height: 100%; margin-top: 16px" @submit.prevent="save">
     <h1>Расскажи о себе</h1>
     <p class="muted">Подберём сценарии под твою работу</p>
-      <label class="field" style="margin-top: 24px;">Имя<input v-model="name" name="display_name" autocomplete="name" placeholder="маргарита" /></label>
+      <label class="field" style="margin-top: 24px;">Имя<input v-model="name" name="display_name" autocomplete="name" placeholder="Введите ваше имя" /></label>
       <div class="row profile-spheres">
         <button v-for="sphere in PROFILE_SPHERES" :key="sphere.id" type="button" class="chip" :class="{ on: selected === sphere.id }" @click="chooseSphere(sphere.id)">{{ sphere.title }}</button>
       </div>
