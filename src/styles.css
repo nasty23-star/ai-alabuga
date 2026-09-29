@@ -381,7 +381,7 @@ h2 { font-size: 18px; font-weight: 700; }
   letter-spacing: -1.08px;
 }
 .auth-copy .body { margin-top: 16px; max-width: 320px; }
-.bg-peaks { position: absolute; left: 0px; bottom: 80px; width: 100%; }
+.bg-peaks { position: absolute; left: 0px; top: 200px; width: 100%; }
 
 .bg-peaks-restrictions {
   position: absolute;
