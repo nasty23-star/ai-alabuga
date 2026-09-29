@@ -16,8 +16,24 @@
 * { box-sizing: border-box; }
 body { margin: 0; min-height: 100dvh; background: var(--stage); }
 button, input, textarea, select { font: inherit; color: inherit; }
-button { cursor: pointer; }
+
+button {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  background-clip: padding-box;
+}
+
+button:focus { outline: none; }
+
+button:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
 h1, h2, p { margin: 0; }
+
 img { display: block; }
 
 .stage {
