@@ -270,7 +270,6 @@ useTelegramButtons(() => {
       <div class="score-hero">
         <span class="score-pill" :class="debrief.outcome.type">{{ outcomeLabel }}</span>
         <b>{{ score == null ? '—' : formatTen(score) }}</b>
-        <span>из 10</span>
       </div>
       <div class="score-art">
         <img :src="peakTotal" alt="" />
