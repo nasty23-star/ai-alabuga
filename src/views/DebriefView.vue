@@ -1,26 +1,12 @@
-<script lang="ts">
-import linkIcon from '@/assets/onboarding/link.svg'
-
-interface DebriefSnapshot {
-  debrief: import('@/api/types').Debrief
-  negotiation: import('@/api/types').NegotiationState
-  step: 'score' | 'feedback' | 'summary' | 'metric' | 'links'
-  reviewTab: 'deal' | 'growth'
-  selectedKey: string
-  scrollY: number
-}
-
-const debriefSnapshots = new Map<string, DebriefSnapshot>()
-</script>
-
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue'
-import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import backIcon from '@/assets/onboarding/back.svg'
 import peakTotal from '@/assets/onboarding/peak-total.svg'
 import { ApiError, getApi } from '@/api'
 import { useTelegramButtons } from '@/telegram'
 import type { Debrief, Metric, NegotiationState } from '@/api/types'
+import linkIcon from '@/assets/onboarding/link.svg'
 
 interface ShareItem {
   id: string
@@ -44,11 +30,11 @@ const COPY: Record<string, { en: string; text: string }> = {
   },
   own_outcome: {
     en: 'Own Outcome',
-    text: 'Насколько итог хорош по твоим приоритетам из мастера: 0 — твоя граница, 10 — идеал.',
+    text: 'Насколько итог хорош по твоим приоритетам из мастера: 0 — твоя граница, 100 — лучшее, что давали эти переговоры. Ниже нуля — сделка хуже твоей границы.',
   },
   batna_gain: {
     en: 'BATNA Gain',
-    text: 'Насколько сделка лучше плана Б. Минус — лучше было не договариваться. Только если план Б задан числом.',
+    text: 'Насколько сделка лучше плана Б. Ниже нуля — лучше было не договариваться.',
   },
   reservation_point_discipline: {
     en: 'Reservation Point Discipline',
@@ -78,51 +64,41 @@ const selectedKey = ref('')
 const sheet = ref(false)
 const rateSheet = ref(false)
 const includeTranscript = ref(false)
-const ttlHours = ref(24)
+const ttlHours = ref(168)
 const pending = ref(false)
 const copied = ref(false)
 const links = ref<ShareItem[]>([])
 const reviewTab = ref<'deal' | 'growth'>('deal')
 
-function cameBackFromGlossary() {
-  if (route.query.review === '1') return true
-  const forward = window.history.state?.forward
-  return typeof forward === 'string' && forward.includes('glossary')
-}
-
-const remembered = cameBackFromGlossary() ? debriefSnapshots.get(id.value) : undefined
-if (remembered) {
-  debrief.value = remembered.debrief
-  negotiation.value = remembered.negotiation
-  step.value = remembered.step
-  reviewTab.value = remembered.reviewTab
-  selectedKey.value = remembered.selectedKey
-}
-
 const DEAL_KEYS = new Set(['own_outcome', 'batna_gain', 'reservation_point_discipline', 'concession_discipline'])
 
 const selected = computed(() => debrief.value?.metrics.find((metric) => metric.key === selectedKey.value) ?? null)
 
-function pointsToTen(value: number) {
-  return Math.round(Math.max(0, Math.min(10, value / 10)) * 10) / 10
+// Шкала бэкенда — 0…100, как в истории и прогрессе
+function pointsToScore(value: number) {
+  return Math.round(Math.max(0, Math.min(100, value)))
 }
 
-function metricTen(metric: Metric) {
+function metricScore(metric: Metric) {
   if (!metric.available || typeof metric.value !== 'number') return null
   if (metric.unit !== 'points' && metric.unit !== 'percent') return null
-  return pointsToTen(metric.value)
+  return pointsToScore(metric.value)
 }
 
 const score = computed(() => {
   const own = debrief.value?.outcome.own_outcome
-  if (typeof own === 'number') return pointsToTen(own)
-  const tens = (debrief.value?.metrics ?? []).map(metricTen).filter((value): value is number => value != null)
-  if (!tens.length) return null
-  const average = tens.reduce((sum, value) => sum + value, 0) / tens.length
-  return Math.round(average * 10) / 10
+  if (typeof own === 'number') return pointsToScore(own)
+  const scores = (debrief.value?.metrics ?? []).map(metricScore).filter((value): value is number => value != null)
+  if (!scores.length) return null
+  return Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length)
 })
 
-function formatTen(value: number) {
+const belowReservation = computed(() => {
+  const own = debrief.value?.outcome.own_outcome
+  return typeof own === 'number' && own < 0
+})
+
+function formatScore(value: number) {
   return value.toLocaleString('ru-RU', { maximumFractionDigits: 1 })
 }
 
@@ -149,14 +125,6 @@ const startHere = computed(() => {
 })
 
 onMounted(async () => {
-  if (remembered) {
-    await nextTick()
-    requestAnimationFrame(() => {
-      const page = document.scrollingElement
-      if (page) page.scrollTop = remembered.scrollY
-    })
-    return
-  }
   try {
     const [report, state] = await Promise.all([getApi().debrief(id.value), getApi().getNegotiation(id.value)])
     debrief.value = report
@@ -171,23 +139,15 @@ onMounted(async () => {
   }
 })
 
-onBeforeRouteLeave(() => {
-  if (!debrief.value || !negotiation.value) return
-  debriefSnapshots.set(id.value, {
-    debrief: debrief.value,
-    negotiation: negotiation.value,
-    step: step.value,
-    reviewTab: reviewTab.value,
-    selectedKey: selectedKey.value,
-    scrollY: document.scrollingElement?.scrollTop ?? 0,
-  })
-})
+// Отрицательный итог — не ноль: сделка хуже границы игрока, и это надо показать словами
+const BELOW_ZERO: Record<string, string> = { own_outcome: 'ниже границы', batna_gain: 'хуже плана Б' }
 
 function formatMetric(metric: Metric) {
   if (!metric.available) return metric.unavailable_reason ?? '—'
   if (metric.unit === 'boolean') return metric.value ? 'Да' : 'Нет'
-  const ten = metricTen(metric)
-  if (ten != null && metric.unit === 'points') return formatTen(ten)
+  if (typeof metric.value === 'number' && metric.value < 0 && BELOW_ZERO[metric.key]) return BELOW_ZERO[metric.key]
+  const points = metricScore(metric)
+  if (points != null && metric.unit === 'points') return formatScore(points)
   if (metric.unit === 'percent') return `${metric.value}%`
   return String(metric.value ?? '—')
 }
@@ -303,23 +263,23 @@ useTelegramButtons(() => {
       },
     }
   }
-  return { main: { text: 'Новое общение', onClick: again }, back: () => { void router.push('/scenarios') } }
+  return { main: { text: 'Новая попытка', onClick: again }, back: () => { void router.push('/scenarios') } }
 })
 </script>
 
 <template>
-  <main class="screen debrief" :class="{ 'score-screen': step === 'score' }">
+  <main class="screen debrief score" :class="{ 'score-screen': step === 'score' }">
     <p v-if="error" class="error">{{ error }}</p>
 
     <template v-if="debrief && step === 'score'">
       <header class="score-head">
         <button class="back" type="button" aria-label="Закрыть" @click="router.push('/scenarios')">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <img :src="linkIcon">
         </button>
       </header>
       <div class="score-hero">
         <span class="score-pill" :class="debrief.outcome.type">{{ outcomeLabel }}</span>
-        <b>{{ score == null ? '—' : formatTen(score) }}</b>
+        <b>{{ score == null ? '—' : formatScore(score) }}</b>
       </div>
       <div class="score-art">
         <img :src="peakTotal" alt="" />
@@ -374,8 +334,8 @@ useTelegramButtons(() => {
       <h1>{{ negotiation?.scenario.title ?? 'Разбор' }}</h1>
       <p v-if="negotiation?.counterpart.name" class="muted">{{ negotiation.counterpart.name }}</p>
       <section class="score-card score-row">
-        <b>{{ score == null ? '—' : formatTen(score) }}</b>
-        <span>Итоговый балл<span class="muted">из 10</span></span>
+        <b>{{ score == null ? '—' : formatScore(score) }}</b><b>{{ '/100' }}</b>
+        <span>Итоговый балл<span class="muted">{{ belowReservation ? 'сделка хуже твоей границы' : 'из 100' }}</span></span>
         <!-- <em class="score-pill" :class="debrief.outcome.type">{{ outcomeShort }}</em> -->
       </section>
       <section v-if="startHere.length" class="card start-here">
@@ -392,13 +352,13 @@ useTelegramButtons(() => {
         </div>
       </section>
       <div class="review-tabs" role="tablist">
-        <button type="button" role="tab" :aria-selected="reviewTab === 'deal'" :class="{ on: reviewTab === 'deal' }" @click="reviewTab = 'deal'">Итог сделки</button>
-        <button type="button" role="tab" :aria-selected="reviewTab === 'growth'" :class="{ on: reviewTab === 'growth' }" @click="reviewTab = 'growth'">Мой рост</button>
+        <button type="button" role="tab" :aria-selected="reviewTab === 'deal'" :class="{ on: reviewTab === 'deal' }" @click="reviewTab = 'deal'">Итог сделки · {{ dealMetrics.length }}</button>
+        <button type="button" role="tab" :aria-selected="reviewTab === 'growth'" :class="{ on: reviewTab === 'growth' }" @click="reviewTab = 'growth'">Мой рост · {{ growthMetrics.length }}</button>
       </div>
       <div v-if="reviewTab === 'deal'" class="metrics">
         <article v-for="metric in dealMetrics" :key="metric.key" class="metric">
           <button class="metric-open" type="button" @click="openMetric(metric.key)">
-            <em :class="metric.available ? 'good' : 'muted'">{{ metric.available ? 'считается' : 'заглушка' }}</em>
+            <em :class="metric.available ? 'good' : 'muted'">{{ metric.available ? 'считается' : 'нет данных' }}</em>
             <span>{{ metric.title }}</span>
             <b>{{ metric.available ? formatMetric(metric) : '—' }}</b>
           </button>
@@ -417,7 +377,7 @@ useTelegramButtons(() => {
         <div class="metrics">
           <article v-for="metric in growthMetrics" :key="metric.key" class="metric">
             <button class="metric-open" type="button" @click="openMetric(metric.key)">
-              <em :class="metric.available ? 'good' : 'muted'">{{ metric.available ? 'считается' : 'заглушка' }}</em>
+              <em :class="metric.available ? 'good' : 'muted'">{{ metric.available ? 'считается' : 'нет данных' }}</em>
               <span>{{ metric.title }}</span>
               <b>{{ metric.available ? formatMetric(metric) : '—' }}</b>
             </button>
@@ -427,9 +387,9 @@ useTelegramButtons(() => {
           </article>
         </div>
       </template>
-      <button class="linkish debrief-link" type="button" @click="router.push({ name: 'glossary', query: { from: 'debrief', id: id } })">Что значат метрики</button>
-      <button class="btn tg-hide" type="button" @click="again">Новые переговоры</button>
-      <button class="btn ghost" type="button" @click="again">Новая попытка</button>
+      <!-- По макету: новая попытка и завершение — через «Поделиться ссылкой» -->
+      <button class="btn tg-hide" type="button" @click="again">Новая попытка</button>
+      <button class="linkish debrief-finish" type="button" @click="sheet = true">Завершить</button>
     </template>
 
     <template v-else-if="selected && step === 'metric'">
@@ -448,7 +408,6 @@ useTelegramButtons(() => {
     <template v-else-if="step === 'links'">
       <button class="back" type="button" @click="route.query.links === '1' ? router.back() : route.query.link === '1' ? router.push('/scenarios') : (sheet = true, step = 'summary')"><img :src="backIcon" alt="" width="20" height="20" /></button>
       <h1>Ссылка на разбор</h1>
-      <p class="muted">Ссылка действует 24 часа.</p>
       <p v-if="!links.length" class="muted">Ссылок пока нет.</p>
       <article v-for="item in links" :key="item.id" class="card stack">
         <b>{{ negotiation?.scenario.title ?? 'Разбор' }}</b>
@@ -466,6 +425,7 @@ useTelegramButtons(() => {
         <p class="muted">Ссылка действует</p>
         <div class="ttl">
           <button type="button" :class="{ on: ttlHours === 24 }" @click="ttlHours = 24">24 часа</button>
+          <button type="button" :class="{ on: ttlHours === 168 }" @click="ttlHours = 168">7 дней</button>
           <button type="button" :class="{ on: ttlHours === 720 }" @click="ttlHours = 720">30 дней</button>
         </div>
         <label class="share-toggle">

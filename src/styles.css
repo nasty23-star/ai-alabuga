@@ -1197,6 +1197,11 @@ button.pill { cursor: pointer; }
 /* .tg-app .tg-hide { display: none; } */
 
 .debrief { position: relative; background: #f5f7fb; }
+
+.debrief.score {
+   background: linear-gradient(rgb(212, 226, 253) 0%, rgb(236, 241, 252) 31%, rgb(245, 247, 252) 62%);
+}
+
 .score-screen { background: linear-gradient(180deg, #8FBFFE 0%, #c6deff 20%, #eaf2ff 50%, #ffffff 80%); }
 .score-head { display: flex; justify-content: flex-end; }
 .score-hero { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
@@ -1300,8 +1305,18 @@ button.pill { cursor: pointer; }
   font-style: normal;
   font-weight: 700;
 }
-.growth-note b { display: block; margin: 6px 0; }
-.metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.growth-note b {
+  display: block;
+  margin: 6px 0;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
 .metric {
   display: flex;
   flex-direction: column;
