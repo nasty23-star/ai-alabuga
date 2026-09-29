@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ApiError, getApi } from '@/api'
+import { ApiError } from '@/api'
 import type { SphereId } from '@/api/types'
 import backIcon from '@/assets/onboarding/back.svg'
 import chevron from '@/assets/onboarding/chevron.svg'
@@ -68,16 +68,8 @@ function onToggle() {
   gamification.setEnabled(!gamification.enabled)
 }
 
-async function openLinks() {
-  error.value = ''
-  try {
-    const page = await getApi().listNegotiations(20, null)
-    const finished = page.items.find((item) => item.status === 'finished')
-    if (finished) await router.push({ name: 'debrief', params: { id: finished.id }, query: { links: '1' } })
-    else await router.push({ name: 'history' })
-  } catch (caught) {
-    error.value = caught instanceof ApiError ? caught.message : 'Ссылки недоступны'
-  }
+function openLinks() {
+  void router.push({ name: 'links' })
 }
 </script>
 

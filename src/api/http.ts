@@ -1,4 +1,5 @@
 import { ApiError } from './errors'
+import { loadRememberedShares } from '@/myShares'
 import { readSse } from './sse'
 import type {
   Account,
@@ -16,6 +17,7 @@ import type {
   Persona,
   ScenarioCard,
   ScenariosResponse,
+  MyShare,
   SharedLink,
   SharedResult,
   StartNegotiationBody,
@@ -58,6 +60,7 @@ export interface Api {
   walkAway(id: string): Promise<{ status: 'finished'; outcome: NegotiationState['outcome'] }>
   debrief(id: string): Promise<Debrief>
   share(id: string, ttlHours: number, includeTranscript: boolean): Promise<SharedLink>
+  listShares(): Promise<{ items: MyShare[] }>
   revokeShare(id: string): Promise<void>
   sharedResult(token: string): Promise<SharedResult>
 }
@@ -111,6 +114,71 @@ function readCognicoUrl(payload: unknown): string {
   const url = [row.authorize_url, row.url, row.authorization_url, row.auth_url, row.redirect_url, row.link].find((item) => typeof item === 'string' && item)
   if (typeof url !== 'string') throw new ApiError(502, 'invalid_request', 'Нет ссылки для подключения CogniCo')
   return url
+}
+
+function readText(row: Record<string, unknown>, keys: string[]) {
+  const value = keys.map((key) => row[key]).find((item) => typeof item === 'string' && item.trim())
+  return typeof value === 'string' ? value : null
+}
+
+function readCount(row: Record<string, unknown>, keys: string[]) {
+  const value = keys.map((key) => row[key]).find((item) => typeof item === 'number' && Number.isFinite(item))
+  return typeof value === 'number' ? value : 0
+}
+
+function readShare(item: unknown): MyShare | null {
+  const rec = asRecord(item)
+  const negotiation = asRecord(rec.negotiation ?? rec.scenario)
+  const id = rec.id ?? rec.share_id
+  const url = readText(rec, ['url', 'link'])
+  if ((typeof id !== 'string' && typeof id !== 'number') || !url) return null
+  const status = typeof rec.status === 'string' ? rec.status : ''
+  const revokedAt = readText(rec, ['revoked_at', 'revokedAt'])
+  const revoked = rec.revoked === true || status === 'revoked' || status === 'отозвана' || Boolean(revokedAt)
+  return {
+    id: String(id),
+    url,
+    title: readText(rec, ['theme_title', 'title', 'scenario_title', 'name'])
+      ?? readText(negotiation, ['theme_title', 'title', 'name'])
+      ?? 'Разбор',
+    expires_at: readText(rec, ['expires_at', 'expiresAt']) ?? '',
+    created_at: readText(rec, ['created_at', 'shared_at', 'issued_at', 'started_at']),
+    revoked_at: revoked ? revokedAt : null,
+    views: readCount(rec, ['view_count', 'views', 'opens', 'open_count']),
+    note: readText(rec, ['note', 'label', 'caption']),
+  }
+}
+
+function readShares(payload: unknown): { items: MyShare[] } {
+  const row = asRecord(payload)
+  const raw = Array.isArray(payload)
+    ? payload
+    : Array.isArray(row.items)
+      ? row.items
+      : Array.isArray(row.shares)
+        ? row.shares
+        : Array.isArray(row.results)
+          ? row.results
+          : Array.isArray(row.shared_results)
+            ? row.shared_results
+            : row.shared_result
+              ? [row.shared_result]
+              : readShare(payload)
+                ? [payload]
+                : []
+  return { items: raw.flatMap((item) => {
+    const share = readShare(item)
+    return share ? [share] : []
+  }) }
+}
+
+async function readSharesAt(path: string) {
+  try {
+    return readShares(await request<unknown>(path))
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null
+    throw error
+  }
 }
 
 function readRecordings(payload: unknown): { items: CognicoRecording[] } {
@@ -211,6 +279,13 @@ export function createHttpApi(): Api {
         { method: 'POST', body: JSON.stringify({ ttl_hours: ttlHours, include_transcript: includeTranscript }) },
         crypto.randomUUID(),
       ),
+    listShares: async () => {
+      const remote = await readSharesAt('/api/shared-results')
+      const local = loadRememberedShares()
+      if (!remote) return { items: local }
+      const seen = new Set(remote.items.map((item) => item.id))
+      return { items: [...remote.items, ...local.filter((item) => !seen.has(item.id))] }
+    },
     revokeShare: (id) => request(`/api/shared-results/${id}`, { method: 'DELETE' }),
     sharedResult: (token) => request(`/api/shared-results/${token}`),
   }

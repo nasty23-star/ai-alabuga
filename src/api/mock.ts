@@ -165,6 +165,9 @@ interface ShareRow {
   negotiationId: string
   includeTranscript: boolean
   expires_at: string
+  created_at?: string
+  revoked_at?: string | null
+  views?: number
   revoked: boolean
 }
 
@@ -732,11 +735,37 @@ export function createMockApi(getToken: () => string | null, expired: () => void
         negotiationId: row.id,
         includeTranscript,
         expires_at: new Date(Date.now() + ttlHours * 3600_000).toISOString(),
+        created_at: new Date().toISOString(),
+        revoked_at: null,
+        views: 0,
         revoked: false,
       }
       db.shares.push(share)
       save(db)
       return { id: share.id, url: `/s/${share.token}`, expires_at: share.expires_at }
+    },
+    async listShares() {
+      const db = load()
+      const user = userByToken(db, getToken())
+      const mine = db.negotiations.filter((item) => item.ownerId === user.account.id)
+      const ids = new Set(mine.map((item) => item.id))
+      const items = db.shares
+        .filter((share) => ids.has(share.negotiationId))
+        .map((share) => {
+          const row = mine.find((item) => item.id === share.negotiationId)
+          return {
+            id: share.id,
+            url: `/s/${share.token}`,
+            title: row?.scenario.title ?? 'Разбор',
+            expires_at: share.expires_at,
+            created_at: share.created_at ?? row?.finished_at ?? row?.started_at ?? null,
+            revoked_at: share.revoked ? share.revoked_at ?? share.created_at ?? null : null,
+            views: share.views ?? 0,
+            note: null,
+          }
+        })
+        .reverse()
+      return { items }
     },
     async revokeShare(id) {
       const db = load()
@@ -744,6 +773,7 @@ export function createMockApi(getToken: () => string | null, expired: () => void
       const share = db.shares.find((item) => item.id === id)
       if (!share) fail(404, 'not_found', 'Ссылка не найдена')
       share.revoked = true
+      share.revoked_at = new Date().toISOString()
       save(db)
     },
     async sharedResult(token) {
@@ -751,6 +781,8 @@ export function createMockApi(getToken: () => string | null, expired: () => void
       const share = db.shares.find((item) => item.token === token)
       if (!share || share.revoked) fail(410, 'link_revoked', 'Ссылка отозвана')
       if (new Date(share.expires_at).getTime() < Date.now()) fail(410, 'link_expired', 'Ссылка просрочена')
+      share.views = (share.views ?? 0) + 1
+      save(db)
       const row = db.negotiations.find((item) => item.id === share.negotiationId)
       if (!row || row.status !== 'finished') fail(409, 'debrief_unavailable', 'Разбор недоступен')
       const debrief = buildDebrief(row)

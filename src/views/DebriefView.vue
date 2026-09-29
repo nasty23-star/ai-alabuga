@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import backIcon from '@/assets/onboarding/back.svg'
 import peakTotal from '@/assets/onboarding/peak-total.svg'
 import { ApiError, getApi } from '@/api'
+import { rememberRevoked, rememberShare } from '@/myShares'
 import { useTelegramButtons } from '@/telegram'
 import type { Debrief, Metric, NegotiationState } from '@/api/types'
 import linkIcon from '@/assets/onboarding/link.svg'
@@ -210,6 +211,16 @@ async function ensureLink() {
     const created = await getApi().share(id.value, ttlHours.value, includeTranscript.value)
     const item: ShareItem = { id: created.id, url: created.url, expiresAt: created.expires_at, revoked: false }
     links.value.unshift(item)
+    rememberShare({
+      id: created.id,
+      url: created.url,
+      title: negotiation.value?.scenario.title || 'Разбор',
+      expires_at: created.expires_at,
+      created_at: new Date().toISOString(),
+      revoked_at: null,
+      views: 0,
+      note: null,
+    })
     copied.value = false
     return item
   } catch (caught) {
@@ -243,6 +254,7 @@ async function sendTelegram() {
 async function revoke(item: ShareItem) {
   await getApi().revokeShare(item.id)
   item.revoked = true
+  rememberRevoked(item.id)
 }
 
 function again() {

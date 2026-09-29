@@ -254,3 +254,14 @@ export interface SharedLink {
   url: string
   expires_at: string
 }
+
+export interface MyShare {
+  id: string
+  url: string
+  title: string
+  expires_at: string
+  created_at: string | null
+  revoked_at: string | null
+  views: number
+  note: string | null
+}

@@ -6,6 +6,7 @@ import ChatView from '@/views/ChatView.vue'
 import DebriefView from '@/views/DebriefView.vue'
 import GlossaryView from '@/views/GlossaryView.vue'
 import HistoryView from '@/views/HistoryView.vue'
+import LinksView from '@/views/LinksView.vue'
 import ProgressView from '@/views/ProgressView.vue'
 import OnboardingView from '@/views/OnboardingView.vue'
 import PeaksView from '@/views/PeaksView.vue'
@@ -34,6 +35,7 @@ const router = createRouter({
     { path: '/glossary', name: 'glossary', component: GlossaryView },
     { path: '/peaks', name: 'peaks', component: PeaksView },
     { path: '/settings', name: 'settings', component: SettingsView },
+    { path: '/links', name: 'links', component: LinksView },
     { path: '/summit', name: 'summit', component: SummitView, meta: { bare: true } },
     { path: '/s/:token', name: 'shared', component: SharedView, meta: { public: true, bare: true } },
   ],

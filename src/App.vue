@@ -23,7 +23,7 @@ const navItems = [
   { to: '/scenarios', label: 'Сценарии', icon: navHome, match: ['scenarios', 'pick'] },
   { to: '/history', label: 'Тренировки', icon: navFile, match: ['history', 'debrief', 'peaks'] },
   { to: '/progress', label: 'Прогресс', icon: navChart, match: ['progress', 'glossary'] },
-  { to: '/settings', label: 'Профиль', icon: navUser, match: ['settings'] },
+  { to: '/settings', label: 'Профиль', icon: navUser, match: ['settings', 'links'] },
 ]
 
 function navActive(match: string[]) {
