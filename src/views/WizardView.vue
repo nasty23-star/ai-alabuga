@@ -909,18 +909,6 @@ async function start() {
     <label class="own-name">
       <input v-model="nameLine" placeholder="[Имя], CFO" />
     </label>
-    <article class="card own-sliders">
-      <label>
-        <b>Жёсткость</b>
-        <input v-model.number="profile.formality" type="range" min="0" max="1" step="0.01" :style="{ '--p': `${profile.formality * 100}%` }" />
-        <span class="own-scale"><span>мягко</span><span>давит</span></span>
-      </label>
-      <label>
-        <b>Разговорчивость</b>
-        <input v-model.number="talkativeness" type="range" min="0" max="100" step="1" :style="{ '--p': `${talkativeness}%` }" />
-        <span class="own-scale"><span>коротко</span><span>много слов</span></span>
-      </label>
-    </article>
     <section class="own-phrases">
       <b>Типичные возражения</b>
       <div class="own-chips">
