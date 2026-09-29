@@ -101,7 +101,12 @@ h2 { font-size: 18px; font-weight: 700; }
   font-size: 13px;
   font-weight: 600;
 }
-.linkish { background: none; border: 0; color: var(--ink); font-weight: 600; text-decoration: underline; }
+.linkish {
+  background: none;
+  border: 0;
+  color: var(--blue);
+  font-weight: 600;
+}
 
 .field { display: flex; flex-direction: column; gap: 8px; font-size: 14px; font-weight: 600; }
 .field input, .field textarea, .field select {
