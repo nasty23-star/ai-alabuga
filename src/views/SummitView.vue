@@ -10,6 +10,7 @@ import { collectPeaks } from '@/gamification/badges'
 import { useGamificationStore } from '@/stores/gamification'
 import { useSessionStore } from '@/stores/session'
 import { useTelegramButtons } from '@/telegram'
+import linkIcon from '@/assets/onboarding/link.svg'
 
 const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
 
@@ -200,10 +201,7 @@ async function share() {
     </div>
 
     <button class="btn summit-share btn-cta" type="button" @click="share">
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-        <path d="M9 11.5V3.5M9 3.5 6.2 6.2M9 3.5l2.8 2.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
-        <path d="M4 9.5v4.2A1.3 1.3 0 0 0 5.3 15h7.4A1.3 1.3 0 0 0 14 13.7V9.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
-      </svg>
+     <img :src="linkIcon" alt="" />
       {{ shared ? 'Скопировано' : 'Поделиться' }}
     </button>
     <p v-if="error" class="error">{{ error }}</p>

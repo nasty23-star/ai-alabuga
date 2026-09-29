@@ -1,4 +1,6 @@
 <script lang="ts">
+import linkIcon from '@/assets/onboarding/link.svg'
+
 interface DebriefSnapshot {
   debrief: import('@/api/types').Debrief
   negotiation: import('@/api/types').NegotiationState
@@ -366,7 +368,7 @@ useTelegramButtons(() => {
         <button class="back" type="button" @click="router.push('/scenarios')"><img :src="backIcon" alt="" width="20" height="20" /></button>
         <b>Разбор</b>
         <button class="back" type="button" aria-label="Поделиться" @click="sheet = true">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="5" cy="9" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="13" cy="5" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="13" cy="13" r="2" stroke="currentColor" stroke-width="1.5"/><path d="M7 8.2l4-2.4M7 9.8l4 2.4" stroke="currentColor" stroke-width="1.5"/></svg>
+          <img :src="linkIcon" alt="" />
         </button>
       </header>
       <h1>{{ negotiation?.scenario.title ?? 'Разбор' }}</h1>
