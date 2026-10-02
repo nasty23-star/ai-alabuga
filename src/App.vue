@@ -1,67 +1,85 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import navUser from '@/assets/onboarding/nav-user.svg?raw'
-import navChart from '@/assets/onboarding/nav-chart.svg?raw'
-import navFile from '@/assets/onboarding/nav-file.svg?raw'
-import navHome from '@/assets/onboarding/nav-home.svg?raw'
-import SplashScreen from '@/components/SplashScreen.vue'
-import { useGamificationStore } from '@/stores/gamification'
-import { useSessionStore } from '@/stores/session'
-import { readTelegramProfile, setBackButton, setMainButton } from '@/telegram'
+import { computed, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import navUser from "@/assets/onboarding/nav-user.svg?raw";
+import navChart from "@/assets/onboarding/nav-chart.svg?raw";
+import navFile from "@/assets/onboarding/nav-file.svg?raw";
+import navHome from "@/assets/onboarding/nav-home.svg?raw";
+import SplashScreen from "@/components/SplashScreen.vue";
+import { useGamificationStore } from "@/stores/gamification";
+import { useSessionStore } from "@/stores/session";
+import { readTelegramProfile, setBackButton, setMainButton } from "@/telegram";
 
-const SPLASH_MS = 900
+const SPLASH_MS = 900;
 
-const route = useRoute()
-const router = useRouter()
-const session = useSessionStore()
-const gamification = useGamificationStore()
-const booting = ref(true)
-const bare = computed(() => Boolean(route.meta.bare))
-const showNav = computed(() => !booting.value && session.isAuthenticated && session.onboarded && !bare.value && route.name !== 'chat' && route.name !== 'wizard')
+const route = useRoute();
+const router = useRouter();
+const session = useSessionStore();
+const gamification = useGamificationStore();
+const booting = ref(true);
+const bare = computed(() => Boolean(route.meta.bare));
+const showNav = computed(
+  () =>
+    !booting.value &&
+    session.isAuthenticated &&
+    session.onboarded &&
+    !bare.value &&
+    route.name !== "chat" &&
+    route.name !== "wizard",
+);
 const navItems = [
-  { to: '/scenarios', label: 'Сценарии', icon: navHome, match: ['scenarios', 'pick'] },
-  { to: '/history', label: 'Тренировки', icon: navFile, match: ['history', 'debrief', 'peaks'] },
-  { to: '/progress', label: 'Прогресс', icon: navChart, match: ['progress', 'glossary'] },
-  { to: '/settings', label: 'Профиль', icon: navUser, match: ['settings', 'links'] },
-]
+  { to: "/scenarios", label: "Сценарии", icon: navHome, match: ["scenarios", "pick"] },
+  { to: "/history", label: "Тренировки", icon: navFile, match: ["history", "debrief", "peaks"] },
+  { to: "/progress", label: "Прогресс", icon: navChart, match: ["progress", "glossary"] },
+  { to: "/settings", label: "Профиль", icon: navUser, match: ["settings", "links"] },
+];
 
 function navActive(match: string[]) {
-  return match.includes(String(route.name))
+  return match.includes(String(route.name));
 }
 
 watch(booting, (value) => {
-  if (!value) return
-  setMainButton(null)
-  setBackButton(null)
-})
+  if (!value) return;
+  setMainButton(null);
+  setBackButton(null);
+});
 
-watch(() => route.fullPath, () => {
-  gamification.hydrate()
-}, { immediate: true })
+watch(
+  () => route.fullPath,
+  () => {
+    gamification.hydrate();
+  },
+  { immediate: true },
+);
 
 onMounted(async () => {
-  gamification.hydrate()
-  const started = Date.now()
-  const profile = readTelegramProfile()
+  gamification.hydrate();
+  const started = Date.now();
+  const profile = readTelegramProfile();
   if (profile && session.login !== `tg:${profile.id}`) {
     try {
-      await session.signInTelegram(profile)
-      await router.replace(session.greetOnEntry && session.onboarded ? { name: 'welcome' } : (session.onboarded ? '/scenarios' : '/onboarding'))
+      await session.signInTelegram(profile);
+      await router.replace(
+        session.greetOnEntry && session.onboarded
+          ? { name: "welcome" }
+          : session.onboarded
+            ? "/scenarios"
+            : "/onboarding",
+      );
     } catch {
       // Без данных Telegram остаётся обычный вход.
     }
   } else if (session.isAuthenticated) {
     try {
-      await session.refresh()
+      await session.refresh();
     } catch {
       // Локальная сессия остаётся, если аккаунт сейчас не обновить.
     }
   }
-  const wait = SPLASH_MS - (Date.now() - started)
-  if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait))
-  booting.value = false
-})
+  const wait = SPLASH_MS - (Date.now() - started);
+  if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+  booting.value = false;
+});
 </script>
 
 <template>
@@ -70,7 +88,13 @@ onMounted(async () => {
       <SplashScreen v-if="booting" />
       <router-view />
       <nav v-if="showNav" class="nav" data-tour="menu">
-        <router-link v-for="item in navItems" :key="item.to" :to="item.to" :class="{ 'is-active': navActive(item.match) }" :aria-current="navActive(item.match) ? 'page' : undefined">
+        <router-link
+          v-for="item in navItems"
+          :key="item.to"
+          :to="item.to"
+          :class="{ 'is-active': navActive(item.match) }"
+          :aria-current="navActive(item.match) ? 'page' : undefined"
+        >
           <span class="nav-icon" v-html="item.icon" />
         </router-link>
       </nav>

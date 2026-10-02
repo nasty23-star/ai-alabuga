@@ -1,23 +1,23 @@
-import { createPinia } from 'pinia'
-import { createApp } from 'vue'
-import App from './App.vue'
-import router from './router'
-import { captureCognicoReturn } from './cognico'
-import { installApiAuth, useSessionStore } from './stores/session'
-import { initTelegram } from './telegram'
-import './styles.css'
+import { createPinia } from "pinia";
+import { createApp } from "vue";
+import App from "./App.vue";
+import router from "./router";
+import { captureCognicoReturn } from "./cognico";
+import { installApiAuth, useSessionStore } from "./stores/session";
+import { initTelegram } from "./telegram";
+import "./styles.css";
 
-captureCognicoReturn()
-initTelegram()
+captureCognicoReturn();
+initTelegram();
 
-const app = createApp(App)
-const pinia = createPinia()
-app.use(pinia)
-app.use(router)
+const app = createApp(App);
+const pinia = createPinia();
+app.use(pinia);
+app.use(router);
 installApiAuth(() => {
-  const session = useSessionStore()
-  const next = router.currentRoute.value.fullPath
-  session.clear()
-  void router.push({ name: 'auth', query: { next } })
-})
-app.mount('#app')
+  const session = useSessionStore();
+  const next = router.currentRoute.value.fullPath;
+  session.clear();
+  void router.push({ name: "auth", query: { next } });
+});
+app.mount("#app");

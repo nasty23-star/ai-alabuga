@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
-import { ApiError, getApi } from '@/api'
-import type { SharedResult } from '@/api/types'
+import { onMounted, ref } from "vue";
+import { useRoute } from "vue-router";
+import { ApiError, getApi } from "@/api";
+import type { SharedResult } from "@/api/types";
 
-const route = useRoute()
-const result = ref<SharedResult | null>(null)
-const error = ref('')
+const route = useRoute();
+const result = ref<SharedResult | null>(null);
+const error = ref("");
 
 onMounted(async () => {
   try {
-    result.value = await getApi().sharedResult(String(route.params.token))
+    result.value = await getApi().sharedResult(String(route.params.token));
   } catch (caught) {
-    error.value = caught instanceof ApiError ? caught.message : 'Ссылка недоступна'
+    error.value = caught instanceof ApiError ? caught.message : "Ссылка недоступна";
   }
-})
+});
 </script>
 
 <template>
@@ -36,7 +36,14 @@ onMounted(async () => {
       </article>
       <article v-if="result.transcript" class="stack">
         <h2>Транскрипт</h2>
-        <p v-for="turn in result.transcript" :key="`${turn.index}-${turn.speaker}`" class="bubble" :class="turn.speaker">{{ turn.text }}</p>
+        <p
+          v-for="turn in result.transcript"
+          :key="`${turn.index}-${turn.speaker}`"
+          class="bubble"
+          :class="turn.speaker"
+        >
+          {{ turn.text }}
+        </p>
       </article>
     </section>
   </main>

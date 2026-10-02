@@ -1,82 +1,84 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { ApiError } from '@/api'
-import type { SphereId } from '@/api/types'
-import backIcon from '@/assets/onboarding/back.svg'
-import chevron from '@/assets/onboarding/chevron.svg'
-import { PROFILE_SPHERES } from '@/spheres'
-import { useGamificationStore } from '@/stores/gamification'
-import { useSessionStore } from '@/stores/session'
-import { closeMiniApp } from '@/telegram'
+import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
+import { ApiError } from "@/api";
+import type { SphereId } from "@/api/types";
+import backIcon from "@/assets/onboarding/back.svg";
+import chevron from "@/assets/onboarding/chevron.svg";
+import { PROFILE_SPHERES } from "@/spheres";
+import { useGamificationStore } from "@/stores/gamification";
+import { useSessionStore } from "@/stores/session";
+import { closeMiniApp } from "@/telegram";
 
-const session = useSessionStore()
-const gamification = useGamificationStore()
-const router = useRouter()
-const login = ref('')
-const password = ref('')
-const error = ref('')
-const message = ref('')
-const displayName = computed(() => session.account?.display_name?.trim() ?? '')
-const initial = computed(() => displayName.value.slice(0, 1).toUpperCase())
-const name = ref(session.account?.display_name ?? '')
-const sphere = ref<SphereId | null>(session.account?.spheres[0] ?? null)
-const saving = ref(false)
+const session = useSessionStore();
+const gamification = useGamificationStore();
+const router = useRouter();
+const login = ref("");
+const password = ref("");
+const error = ref("");
+const message = ref("");
+const displayName = computed(() => session.account?.display_name?.trim() ?? "");
+const initial = computed(() => displayName.value.slice(0, 1).toUpperCase());
+const name = ref(session.account?.display_name ?? "");
+const sphere = ref<SphereId | null>(session.account?.spheres[0] ?? null);
+const saving = ref(false);
 
-onMounted(() => gamification.hydrate())
+onMounted(() => gamification.hydrate());
 
 function chooseSphere(id: SphereId) {
-  sphere.value = id
+  sphere.value = id;
 }
 
 async function saveProfile() {
-  error.value = ''
-  message.value = ''
-  const displayNameValue = name.value.trim()
+  error.value = "";
+  message.value = "";
+  const displayNameValue = name.value.trim();
   if (!displayNameValue) {
-    error.value = 'Укажите имя'
-    return
+    error.value = "Укажите имя";
+    return;
   }
-  saving.value = true
+  saving.value = true;
   try {
-    await session.saveProfile(displayNameValue, sphere.value ? [sphere.value] : [])
-    message.value = 'Профиль сохранён'
+    await session.saveProfile(displayNameValue, sphere.value ? [sphere.value] : []);
+    message.value = "Профиль сохранён";
   } catch (caught) {
-    error.value = caught instanceof ApiError ? caught.message : 'Не удалось сохранить'
+    error.value = caught instanceof ApiError ? caught.message : "Не удалось сохранить";
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
 async function upgrade() {
-  error.value = ''
+  error.value = "";
   try {
-    await session.upgrade(login.value, password.value)
-    gamification.hydrate()
-    message.value = 'Аккаунт теперь постоянный, история та же'
+    await session.upgrade(login.value, password.value);
+    gamification.hydrate();
+    message.value = "Аккаунт теперь постоянный, история та же";
   } catch (caught) {
-    error.value = caught instanceof ApiError ? caught.message : 'Не удалось'
+    error.value = caught instanceof ApiError ? caught.message : "Не удалось";
   }
 }
 
 async function logout() {
-  await session.signOut()
-  await router.push('/auth')
+  await session.signOut();
+  await router.push("/auth");
 }
 
 function onToggle() {
-  gamification.setEnabled(!gamification.enabled)
+  gamification.setEnabled(!gamification.enabled);
 }
 
 function openLinks() {
-  void router.push({ name: 'links' })
+  void router.push({ name: "links" });
 }
 </script>
 
 <template>
   <main class="screen profile">
     <header class="pick-head">
-      <button class="back" type="button" @click="router.push('/scenarios')"><img :src="backIcon" alt="" width="20" height="20" /></button>
+      <button class="back" type="button" @click="router.push('/scenarios')">
+        <img :src="backIcon" alt="" width="20" height="20" />
+      </button>
       <b>Профиль</b>
       <span />
     </header>
@@ -88,9 +90,24 @@ function openLinks() {
     </div>
 
     <form class="card profile-form" @submit.prevent="saveProfile">
-      <label class="field">Имя<input v-model="name" name="display_name" autocomplete="name" placeholder="Введите ваше имя" /></label>
+      <label class="field"
+        >Имя<input
+          v-model="name"
+          name="display_name"
+          autocomplete="name"
+          placeholder="Введите ваше имя"
+      /></label>
       <div class="row profile-spheres">
-        <button v-for="item in PROFILE_SPHERES" :key="item.id" type="button" class="chip" :class="{ on: sphere === item.id }" @click="chooseSphere(item.id)">{{ item.title }}</button>
+        <button
+          v-for="item in PROFILE_SPHERES"
+          :key="item.id"
+          type="button"
+          class="chip"
+          :class="{ on: sphere === item.id }"
+          @click="chooseSphere(item.id)"
+        >
+          {{ item.title }}
+        </button>
       </div>
       <button class="btn" type="submit" :disabled="saving">Сохранить</button>
     </form>
@@ -101,7 +118,16 @@ function openLinks() {
           <b>Геймификация</b>
           <p class="muted">Серия и бейджи</p>
         </div>
-        <button class="toggle" :class="{ on: gamification.enabled }" type="button" :aria-pressed="gamification.enabled" aria-label="Геймификация" @click="onToggle"><i /></button>
+        <button
+          class="toggle"
+          :class="{ on: gamification.enabled }"
+          type="button"
+          :aria-pressed="gamification.enabled"
+          aria-label="Геймификация"
+          @click="onToggle"
+        >
+          <i />
+        </button>
       </div>
       <button class="profile-link" type="button" @click="openLinks">
         <span>Мои ссылки</span>

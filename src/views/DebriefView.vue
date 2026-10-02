@@ -1,303 +1,386 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import backIcon from '@/assets/onboarding/back.svg'
-import peakTotal from '@/assets/onboarding/peak-total.svg'
-import { ApiError, getApi } from '@/api'
-import { rememberRevoked, rememberShare } from '@/myShares'
-import { useTelegramButtons } from '@/telegram'
-import type { Debrief, Metric, NegotiationState } from '@/api/types'
-import linkIcon from '@/assets/onboarding/link.svg'
+import { computed, onMounted, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import backIcon from "@/assets/onboarding/back.svg";
+import peakTotal from "@/assets/onboarding/peak-total.svg";
+import { ApiError, getApi } from "@/api";
+import { rememberRevoked, rememberShare } from "@/myShares";
+import { useTelegramButtons } from "@/telegram";
+import type { Debrief, Metric, NegotiationState } from "@/api/types";
+import linkIcon from "@/assets/onboarding/link.svg";
 
 interface ShareItem {
-  id: string
-  url: string
-  expiresAt: string
-  revoked: boolean
+  id: string;
+  url: string;
+  expiresAt: string;
+  revoked: boolean;
 }
 
 const COPY: Record<string, { en: string; text: string }> = {
   filler_density: {
-    en: 'Filler Density',
-    text: 'Как часто в репликах звучат слова-паразиты. Чем меньше, тем чище речь.',
+    en: "Filler Density",
+    text: "Как часто в репликах звучат слова-паразиты. Чем меньше, тем чище речь.",
   },
   open_question_ratio: {
-    en: 'Open Question Ratio',
-    text: 'Доля открытых вопросов — «почему», «как», «что для вас важно» — среди всех твоих вопросов. Открытые выясняют интересы собеседника, закрытые («вы согласны?») — нет.',
+    en: "Open Question Ratio",
+    text: "Доля открытых вопросов — «почему», «как», «что для вас важно» — среди всех твоих вопросов. Открытые выясняют интересы собеседника, закрытые («вы согласны?») — нет.",
   },
   concession_discipline: {
-    en: 'Concession Discipline',
-    text: 'Доля уступок, сделанных в обмен на что-то. 100% — ни одной уступки просто так.',
+    en: "Concession Discipline",
+    text: "Доля уступок, сделанных в обмен на что-то. 100% — ни одной уступки просто так.",
   },
   own_outcome: {
-    en: 'Own Outcome',
-    text: 'Насколько итог хорош по твоим приоритетам из мастера: 0 — твоя граница, 100 — лучшее, что давали эти переговоры. Ниже нуля — сделка хуже твоей границы.',
+    en: "Own Outcome",
+    text: "Насколько итог хорош по твоим приоритетам из мастера: 0 — твоя граница, 100 — лучшее, что давали эти переговоры. Ниже нуля — сделка хуже твоей границы.",
   },
   batna_gain: {
-    en: 'BATNA Gain',
-    text: 'Насколько сделка лучше плана Б. Ниже нуля — лучше было не договариваться.',
+    en: "BATNA Gain",
+    text: "Насколько сделка лучше плана Б. Ниже нуля — лучше было не договариваться.",
   },
   reservation_point_discipline: {
-    en: 'Reservation Point Discipline',
-    text: 'Не согласился ли ты на условия хуже своей границы: да или нет.',
+    en: "Reservation Point Discipline",
+    text: "Не согласился ли ты на условия хуже своей границы: да или нет.",
   },
-}
+};
 
-const route = useRoute()
-const router = useRouter()
-const id = computed(() => String(route.params.id))
-const debrief = ref<Debrief | null>(null)
-const negotiation = ref<NegotiationState | null>(null)
-const error = ref('')
-const step = ref<'score' | 'feedback' | 'summary' | 'metric' | 'links'>('score')
+const route = useRoute();
+const router = useRouter();
+const id = computed(() => String(route.params.id));
+const debrief = ref<Debrief | null>(null);
+const negotiation = ref<NegotiationState | null>(null);
+const error = ref("");
+const step = ref<"score" | "feedback" | "summary" | "metric" | "links">("score");
 const scales = [
-  { id: 'value', title: 'Насколько итог выгоден для тебя?' },
-  { id: 'confident', title: 'Насколько уверенно ты себя чувствовал?' },
-  { id: 'priorities', title: 'Достигнуто ли согласие по своим приоритетам?' },
-  { id: 'liked', title: 'Тебе это понравилось?' },
-  { id: 'honest', title: 'Насколько честным был разговор?' },
-  { id: 'again', title: 'Хочешь работать с этим человеком ещё?' },
-]
-const marks = ref<Record<string, number>>({})
-const otherwise = ref('')
-const nextAsk = ref('')
-const selectedKey = ref('')
-const sheet = ref(false)
-const rateSheet = ref(false)
-const includeTranscript = ref(false)
-const ttlHours = ref(168)
-const pending = ref(false)
-const copied = ref(false)
-const links = ref<ShareItem[]>([])
-const reviewTab = ref<'deal' | 'growth'>('deal')
+  { id: "value", title: "Насколько итог выгоден для тебя?" },
+  { id: "confident", title: "Насколько уверенно ты себя чувствовал?" },
+  { id: "priorities", title: "Достигнуто ли согласие по своим приоритетам?" },
+  { id: "liked", title: "Тебе это понравилось?" },
+  { id: "honest", title: "Насколько честным был разговор?" },
+  { id: "again", title: "Хочешь работать с этим человеком ещё?" },
+];
+const marks = ref<Record<string, number>>({});
+const otherwise = ref("");
+const nextAsk = ref("");
+const selectedKey = ref("");
+const sheet = ref(false);
+const rateSheet = ref(false);
+const includeTranscript = ref(false);
+const ttlHours = ref(168);
+const pending = ref(false);
+const copied = ref(false);
+const links = ref<ShareItem[]>([]);
+const reviewTab = ref<"deal" | "growth">("deal");
 
-const selected = computed(() => debrief.value?.metrics.find((metric) => metric.key === selectedKey.value) ?? null)
+const selected = computed(
+  () => debrief.value?.metrics.find((metric) => metric.key === selectedKey.value) ?? null,
+);
 
 // Шкала бэкенда — 0…100, как в истории и прогрессе
 function pointsToScore(value: number) {
-  return Math.round(Math.max(0, Math.min(100, value)))
+  return Math.round(Math.max(0, Math.min(100, value)));
 }
 
 function metricScore(metric: Metric) {
-  if (!metric.available || typeof metric.value !== 'number') return null
-  if (metric.unit !== 'points' && metric.unit !== 'percent') return null
-  return pointsToScore(metric.value)
+  if (!metric.available || typeof metric.value !== "number") return null;
+  if (metric.unit !== "points" && metric.unit !== "percent") return null;
+  return pointsToScore(metric.value);
 }
 
 const score = computed(() => {
-  const own = debrief.value?.outcome.own_outcome
-  if (typeof own === 'number') return pointsToScore(own)
-  const scores = (debrief.value?.metrics ?? []).map(metricScore).filter((value): value is number => value != null)
-  if (!scores.length) return null
-  return Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length)
-})
+  const own = debrief.value?.outcome.own_outcome;
+  if (typeof own === "number") return pointsToScore(own);
+  const scores = (debrief.value?.metrics ?? [])
+    .map(metricScore)
+    .filter((value): value is number => value != null);
+  if (!scores.length) return null;
+  return Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length);
+});
 
 const belowReservation = computed(() => {
-  const own = debrief.value?.outcome.own_outcome
-  return typeof own === 'number' && own < 0
-})
+  const own = debrief.value?.outcome.own_outcome;
+  return typeof own === "number" && own < 0;
+});
 
 function formatScore(value: number) {
-  return value.toLocaleString('ru-RU', { maximumFractionDigits: 1 })
+  return value.toLocaleString("ru-RU", { maximumFractionDigits: 1 });
 }
 
 const outcomeLabel = computed(() => {
-  const type = debrief.value?.outcome.type
-  if (type === 'deal') return 'Сделка'
-  if (type === 'partial_deal') return 'Частичная сделка'
-  return 'Без сделки'
-})
+  const type = debrief.value?.outcome.type;
+  if (type === "deal") return "Сделка";
+  if (type === "partial_deal") return "Частичная сделка";
+  return "Без сделки";
+});
 
 const outcomeShort = computed(() => {
-  const type = debrief.value?.outcome.type
-  if (type === 'deal') return 'сделка'
-  if (type === 'partial_deal') return 'частичная'
-  return 'без сделки'
-})
+  const type = debrief.value?.outcome.type;
+  if (type === "deal") return "сделка";
+  if (type === "partial_deal") return "частичная";
+  return "без сделки";
+});
 
-const DEAL_KEYS = new Set(['own_outcome', 'batna_gain', 'reservation_point_discipline', 'concession_discipline'])
+const DEAL_KEYS = new Set([
+  "own_outcome",
+  "batna_gain",
+  "reservation_point_discipline",
+  "concession_discipline",
+]);
 
-const dealMetrics = computed(() => (debrief.value?.metrics ?? []).filter((metric) => DEAL_KEYS.has(metric.key)))
-const growthMetrics = computed(() => (debrief.value?.metrics ?? []).filter((metric) => !DEAL_KEYS.has(metric.key)))
+const dealMetrics = computed(() =>
+  (debrief.value?.metrics ?? []).filter((metric) => DEAL_KEYS.has(metric.key)),
+);
+const growthMetrics = computed(() =>
+  (debrief.value?.metrics ?? []).filter((metric) => !DEAL_KEYS.has(metric.key)),
+);
 const startHere = computed(() => {
-  const areas = new Set(debrief.value?.growth_areas ?? [])
-  const picked = (debrief.value?.metrics ?? []).filter((metric) => areas.has(metric.key))
-  return (picked.length ? picked : growthMetrics.value).slice(0, 3)
-})
+  const areas = new Set(debrief.value?.growth_areas ?? []);
+  const picked = (debrief.value?.metrics ?? []).filter((metric) => areas.has(metric.key));
+  return (picked.length ? picked : growthMetrics.value).slice(0, 3);
+});
 
 function growthCountLabel(count: number) {
-  const n = Math.abs(count) % 100
-  const n1 = n % 10
-  if (n > 10 && n < 20) return 'зон роста'
-  if (n1 === 1) return 'зона роста'
-  if (n1 > 1 && n1 < 5) return 'зоны роста'
-  return 'зон роста'
+  const n = Math.abs(count) % 100;
+  const n1 = n % 10;
+  if (n > 10 && n < 20) return "зон роста";
+  if (n1 === 1) return "зона роста";
+  if (n1 > 1 && n1 < 5) return "зоны роста";
+  return "зон роста";
 }
 
 onMounted(async () => {
   try {
-    const [report, state] = await Promise.all([getApi().debrief(id.value), getApi().getNegotiation(id.value)])
-    debrief.value = report
-    negotiation.value = state
-    if (route.query.review === '1') step.value = 'summary'
-    else if (route.query.link === '1' || route.query.links === '1') {
-      step.value = 'links'
-      if (route.query.link === '1') await ensureLink()
+    const [report, state] = await Promise.all([
+      getApi().debrief(id.value),
+      getApi().getNegotiation(id.value),
+    ]);
+    debrief.value = report;
+    negotiation.value = state;
+    if (route.query.review === "1") step.value = "summary";
+    else if (route.query.link === "1" || route.query.links === "1") {
+      step.value = "links";
+      if (route.query.link === "1") await ensureLink();
     }
   } catch (caught) {
-    error.value = caught instanceof ApiError ? caught.message : 'Разбор недоступен'
+    error.value = caught instanceof ApiError ? caught.message : "Разбор недоступен";
   }
-})
+});
 
 // Отрицательный итог — не ноль: сделка хуже границы игрока, и это надо показать словами
-const BELOW_ZERO: Record<string, string> = { own_outcome: 'ниже границы', batna_gain: 'хуже плана Б' }
+const BELOW_ZERO: Record<string, string> = {
+  own_outcome: "ниже границы",
+  batna_gain: "хуже плана Б",
+};
 
 function metricHint(metric: Metric) {
-  return metric.hint || COPY[metric.key]?.text || ''
+  return metric.hint || COPY[metric.key]?.text || "";
 }
 
 function metricCaption(metric: Metric) {
-  if (!metric.available || metric.value == null) return ''
-  if (typeof metric.value === 'number' && metric.value < 0 && BELOW_ZERO[metric.key]) return ''
-  if (metric.unit === 'points') return 'из 100'
-  if (!metric.unit || metric.unit === 'percent' || metric.unit === 'count' || metric.unit === 'boolean') return ''
-  return metric.unit
+  if (!metric.available || metric.value == null) return "";
+  if (typeof metric.value === "number" && metric.value < 0 && BELOW_ZERO[metric.key]) return "";
+  if (metric.unit === "points") return "из 100";
+  if (
+    !metric.unit ||
+    metric.unit === "percent" ||
+    metric.unit === "count" ||
+    metric.unit === "boolean"
+  )
+    return "";
+  return metric.unit;
 }
 
 function formatMetric(metric: Metric) {
-  if (!metric.available) return metric.unavailable_reason ?? '—'
-  if (metric.unit === 'boolean') return metric.value ? 'Да' : 'Нет'
-  if (typeof metric.value === 'number' && metric.value < 0 && BELOW_ZERO[metric.key]) return BELOW_ZERO[metric.key]
-  const points = metricScore(metric)
-  if (points != null && metric.unit === 'points') return formatScore(points)
-  if (metric.unit === 'percent') return `${metric.value}%`
-  return String(metric.value ?? '—')
+  if (!metric.available) return metric.unavailable_reason ?? "—";
+  if (metric.unit === "boolean") return metric.value ? "Да" : "Нет";
+  if (typeof metric.value === "number" && metric.value < 0 && BELOW_ZERO[metric.key])
+    return BELOW_ZERO[metric.key];
+  const points = metricScore(metric);
+  if (points != null && metric.unit === "points") return formatScore(points);
+  if (metric.unit === "percent") return `${metric.value}%`;
+  return String(metric.value ?? "—");
 }
 
 function openGlossary(key: string) {
-  void router.push({ name: 'glossary', query: { from: 'debrief', id: id.value, metric: key } })
+  void router.push({ name: "glossary", query: { from: "debrief", id: id.value, metric: key } });
 }
 
 function ratio(metric: Metric) {
-  if (!metric.available) return 0
-  if (typeof metric.value === 'boolean') return metric.value ? 100 : 8
-  if (typeof metric.value !== 'number') return 0
-  if (metric.unit === 'count') return Math.max(0, Math.min(100, 100 - metric.value * 12))
-  return Math.max(0, Math.min(100, metric.value))
+  if (!metric.available) return 0;
+  if (typeof metric.value === "boolean") return metric.value ? 100 : 8;
+  if (typeof metric.value !== "number") return 0;
+  if (metric.unit === "count") return Math.max(0, Math.min(100, 100 - metric.value * 12));
+  return Math.max(0, Math.min(100, metric.value));
 }
 
 function openMetric(key: string) {
-  selectedKey.value = key
-  step.value = 'metric'
+  selectedKey.value = key;
+  step.value = "metric";
 }
 
 function absoluteUrl(url: string) {
-  if (url.startsWith('http')) return url
-  const path = url.startsWith('/') ? url : `/${url}`
-  return `${location.origin}${import.meta.env.BASE_URL}#${path}`
+  if (url.startsWith("http")) return url;
+  const path = url.startsWith("/") ? url : `/${url}`;
+  return `${location.origin}${import.meta.env.BASE_URL}#${path}`;
 }
 
 function linkState(item: ShareItem) {
-  if (item.revoked) return 'отозвана'
-  if (new Date(item.expiresAt).getTime() < Date.now()) return 'срок истёк'
-  return 'активна'
+  if (item.revoked) return "отозвана";
+  if (new Date(item.expiresAt).getTime() < Date.now()) return "срок истёк";
+  return "активна";
 }
 
 async function ensureLink() {
-  if (links.value[0] && !links.value[0].revoked) return links.value[0]
-  error.value = ''
-  pending.value = true
+  if (links.value[0] && !links.value[0].revoked) return links.value[0];
+  error.value = "";
+  pending.value = true;
   try {
-    const created = await getApi().share(id.value, ttlHours.value, includeTranscript.value)
-    const item: ShareItem = { id: created.id, url: created.url, expiresAt: created.expires_at, revoked: false }
-    links.value.unshift(item)
+    const created = await getApi().share(id.value, ttlHours.value, includeTranscript.value);
+    const item: ShareItem = {
+      id: created.id,
+      url: created.url,
+      expiresAt: created.expires_at,
+      revoked: false,
+    };
+    links.value.unshift(item);
     rememberShare({
       id: created.id,
       url: created.url,
-      title: negotiation.value?.scenario.title || 'Разбор',
+      title: negotiation.value?.scenario.title || "Разбор",
       expires_at: created.expires_at,
       created_at: new Date().toISOString(),
       revoked_at: null,
       views: 0,
       note: null,
-    })
-    copied.value = false
-    return item
+    });
+    copied.value = false;
+    return item;
   } catch (caught) {
-    error.value = caught instanceof ApiError ? caught.message : 'Не удалось открыть ссылку'
-    return null
+    error.value = caught instanceof ApiError ? caught.message : "Не удалось открыть ссылку";
+    return null;
   } finally {
-    pending.value = false
+    pending.value = false;
   }
 }
 
 async function copyLink() {
-  const created = await ensureLink()
-  if (!created) return
+  const created = await ensureLink();
+  if (!created) return;
   try {
-    await navigator.clipboard.writeText(absoluteUrl(created.url))
-    copied.value = true
+    await navigator.clipboard.writeText(absoluteUrl(created.url));
+    copied.value = true;
   } catch {
-    error.value = 'Ссылка создана. Скопируйте её из списка «Мои ссылки».'
+    error.value = "Ссылка создана. Скопируйте её из списка «Мои ссылки».";
   }
 }
 
 async function sendTelegram() {
-  const created = await ensureLink()
-  if (!created) return
-  const share = `https://t.me/share/url?url=${encodeURIComponent(absoluteUrl(created.url))}&text=${encodeURIComponent('Разбор переговоров')}`
-  const app = window.Telegram?.WebApp
-  if (app?.openTelegramLink) app.openTelegramLink(share)
-  else window.open(share, '_blank', 'noopener')
+  const created = await ensureLink();
+  if (!created) return;
+  const share = `https://t.me/share/url?url=${encodeURIComponent(absoluteUrl(created.url))}&text=${encodeURIComponent("Разбор переговоров")}`;
+  const app = window.Telegram?.WebApp;
+  if (app?.openTelegramLink) app.openTelegramLink(share);
+  else window.open(share, "_blank", "noopener");
 }
 
 async function revoke(item: ShareItem) {
-  await getApi().revokeShare(item.id)
-  item.revoked = true
-  rememberRevoked(item.id)
+  await getApi().revokeShare(item.id);
+  item.revoked = true;
+  rememberRevoked(item.id);
 }
 
 function again() {
-  const scenarioId = negotiation.value?.scenario.id
-  void router.push(scenarioId ? `/wizard/${scenarioId}` : '/wizard')
+  const scenarioId = negotiation.value?.scenario.id;
+  void router.push(scenarioId ? `/wizard/${scenarioId}` : "/wizard");
 }
 
 useTelegramButtons(() => {
   if (sheet.value) {
     return {
-      main: { text: 'Отправить в Telegram', enabled: !pending.value, progress: pending.value, onClick: () => { void sendTelegram() } },
-      back: () => { sheet.value = false },
-    }
+      main: {
+        text: "Отправить в Telegram",
+        enabled: !pending.value,
+        progress: pending.value,
+        onClick: () => {
+          void sendTelegram();
+        },
+      },
+      back: () => {
+        sheet.value = false;
+      },
+    };
   }
-  if (step.value === 'metric') {
-    return { main: { text: 'Все метрики', onClick: () => { step.value = 'summary' } }, back: () => { step.value = 'summary' } }
+  if (step.value === "metric") {
+    return {
+      main: {
+        text: "Все метрики",
+        onClick: () => {
+          step.value = "summary";
+        },
+      },
+      back: () => {
+        step.value = "summary";
+      },
+    };
   }
-  if (step.value === 'score') {
+  if (step.value === "score") {
     if (rateSheet.value) {
       return {
-        main: { text: 'Да, оценить', onClick: () => { rateSheet.value = false; step.value = 'feedback' } },
-        back: () => { rateSheet.value = false },
-      }
+        main: {
+          text: "Да, оценить",
+          onClick: () => {
+            rateSheet.value = false;
+            step.value = "feedback";
+          },
+        },
+        back: () => {
+          rateSheet.value = false;
+        },
+      };
     }
     return {
-      main: { text: 'Смотреть разбор', onClick: () => { rateSheet.value = true } },
-      back: () => { void router.push('/scenarios') },
-    }
+      main: {
+        text: "Смотреть разбор",
+        onClick: () => {
+          rateSheet.value = true;
+        },
+      },
+      back: () => {
+        void router.push("/scenarios");
+      },
+    };
   }
-  if (step.value === 'feedback') {
-    return { main: { text: 'К разбору', onClick: () => { step.value = 'summary' } }, back: () => { void router.push('/scenarios') } }
+  if (step.value === "feedback") {
+    return {
+      main: {
+        text: "К разбору",
+        onClick: () => {
+          step.value = "summary";
+        },
+      },
+      back: () => {
+        void router.push("/scenarios");
+      },
+    };
   }
-  if (step.value === 'links') {
+  if (step.value === "links") {
     return {
       main: null,
       back: () => {
-        if (route.query.link === '1') void router.push('/scenarios')
-        else { sheet.value = true; step.value = 'summary' }
+        if (route.query.link === "1") void router.push("/scenarios");
+        else {
+          sheet.value = true;
+          step.value = "summary";
+        }
       },
-    }
+    };
   }
-  return { main: { text: 'Новая попытка', onClick: again }, back: () => { void router.push('/scenarios') } }
-})
+  return {
+    main: { text: "Новая попытка", onClick: again },
+    back: () => {
+      void router.push("/scenarios");
+    },
+  };
+});
 </script>
 
 <template>
@@ -307,27 +390,35 @@ useTelegramButtons(() => {
     <template v-if="debrief && step === 'score'">
       <header class="score-head">
         <button class="back" type="button" aria-label="Закрыть" @click="router.push('/scenarios')">
-          <img :src="linkIcon">
+          <img :src="linkIcon" />
         </button>
       </header>
       <div class="score-hero">
         <span class="score-pill" :class="debrief.outcome.type">{{ outcomeLabel }}</span>
-        <b>{{ score == null ? '—' : formatScore(score) }}</b>
+        <b>{{ score == null ? "—" : formatScore(score) }}</b>
       </div>
       <div class="score-art">
         <img :src="peakTotal" alt="" />
       </div>
-      <button class="btn btn-cta" type="button" @click="rateSheet = false; step = 'summary'">Смотреть разбор</button>
-
+      <button
+        class="btn btn-cta"
+        type="button"
+        @click="
+          rateSheet = false;
+          step = 'summary';
+        "
+      >
+        Смотреть разбор
+      </button>
 
       <!-- <div v-if="rateSheet" class="sheet-backdrop" @click.self="rateSheet = false">
         <section class="sheet">
           <h2>Оценишь ценность сделки?</h2> -->
-          <!-- <p class="muted">7 коротких вопросов, около минуты. Можно увидеть не только цифры, но и как прошли переговоры</p>
+      <!-- <p class="muted">7 коротких вопросов, около минуты. Можно увидеть не только цифры, но и как прошли переговоры</p>
           <button class="btn" type="button" @click="rateSheet = true">Смотреть разбор</button> -->
-          <!-- <button class="btn" type="button" @click="rateSheet = false; step = 'feedback'">Да, оценить</button> -->
-          <!-- <button class="btn ghost" type="button" @click="rateSheet = false; step = 'summary'">Нет, сразу к разбору</button> -->
-        <!-- </section>
+      <!-- <button class="btn" type="button" @click="rateSheet = false; step = 'feedback'">Да, оценить</button> -->
+      <!-- <button class="btn ghost" type="button" @click="rateSheet = false; step = 'summary'">Нет, сразу к разбору</button> -->
+      <!-- </section>
       </div> -->
     </template>
 
@@ -358,43 +449,88 @@ useTelegramButtons(() => {
 
     <template v-else-if="debrief && step === 'summary'">
       <header class="pick-head">
-        <button class="back" type="button" @click="router.push('/scenarios')"><img :src="backIcon" alt="" width="20" height="20" /></button>
+        <button class="back" type="button" @click="router.push('/scenarios')">
+          <img :src="backIcon" alt="" width="20" height="20" />
+        </button>
         <b>Разбор</b>
         <button class="back" type="button" aria-label="Поделиться" @click="sheet = true">
           <img :src="linkIcon" alt="" />
         </button>
       </header>
-      <h1>{{ negotiation?.scenario.title ?? 'Разбор' }}</h1>
+      <h1>{{ negotiation?.scenario.title ?? "Разбор" }}</h1>
       <p v-if="negotiation?.counterpart.name" class="muted">{{ negotiation.counterpart.name }}</p>
       <section class="score-card score-row">
-        <b>{{ score == null ? '—' : formatScore(score) }}{{ '/100' }}</b>
-        <span>Итоговый балл<span class="muted">{{ belowReservation ? 'сделка хуже твоей границы' : '' }}</span></span>
+        <b>{{ score == null ? "—" : formatScore(score) }}{{ "/100" }}</b>
+        <span
+          >Итоговый балл<span class="muted">{{
+            belowReservation ? "сделка хуже твоей границы" : ""
+          }}</span></span
+        >
         <!-- <em class="score-pill" :class="debrief.outcome.type">{{ outcomeShort }}</em> -->
       </section>
       <section v-if="startHere.length" class="card start-here">
-        <header><b>С чего начать</b><span class="muted">топ-{{ startHere.length }} {{ growthCountLabel(startHere.length) }}</span></header>
-        <button v-for="(metric, index) in startHere" :key="metric.key" type="button" class="start-row" @click="openMetric(metric.key)">
+        <header>
+          <b>С чего начать</b
+          ><span class="muted"
+            >топ-{{ startHere.length }} {{ growthCountLabel(startHere.length) }}</span
+          >
+        </header>
+        <button
+          v-for="(metric, index) in startHere"
+          :key="metric.key"
+          type="button"
+          class="start-row"
+          @click="openMetric(metric.key)"
+        >
           <i>{{ index + 1 }}</i>
           <span class="start-copy">
             <b>{{ metric.title }}</b>
             <span v-if="metricHint(metric)" class="hint">{{ metricHint(metric) }}</span>
           </span>
-          <b class="start-value" :class="{ 'is-empty': !metric.available }">{{ metric.available ? formatMetric(metric) : '—' }}<template v-if="metricCaption(metric)"> {{ metricCaption(metric) }}</template></b>
+          <b class="start-value" :class="{ 'is-empty': !metric.available }"
+            >{{ metric.available ? formatMetric(metric) : "—"
+            }}<template v-if="metricCaption(metric)"> {{ metricCaption(metric) }}</template></b
+          >
         </button>
       </section>
       <div class="review-tabs" role="tablist">
-        <button type="button" role="tab" :aria-selected="reviewTab === 'deal'" :class="{ on: reviewTab === 'deal' }" @click="reviewTab = 'deal'">Итог сделки</button>
-        <button type="button" role="tab" :aria-selected="reviewTab === 'growth'" :class="{ on: reviewTab === 'growth' }" @click="reviewTab = 'growth'">Мой рост</button>
+        <button
+          type="button"
+          role="tab"
+          :aria-selected="reviewTab === 'deal'"
+          :class="{ on: reviewTab === 'deal' }"
+          @click="reviewTab = 'deal'"
+        >
+          Итог сделки
+        </button>
+        <button
+          type="button"
+          role="tab"
+          :aria-selected="reviewTab === 'growth'"
+          :class="{ on: reviewTab === 'growth' }"
+          @click="reviewTab = 'growth'"
+        >
+          Мой рост
+        </button>
       </div>
       <div v-if="reviewTab === 'deal'" class="metrics">
         <article v-for="metric in dealMetrics" :key="metric.key" class="metric">
           <button class="metric-open" type="button" @click="openMetric(metric.key)">
             <span>{{ metric.title }}</span>
-            <b>{{ metric.available ? formatMetric(metric) : '—' }}</b>
+            <b>{{ metric.available ? formatMetric(metric) : "—" }}</b>
             <em v-if="metricCaption(metric)">{{ metricCaption(metric) }}</em>
           </button>
-          <button class="metric-info" type="button" :aria-label="`Глоссарий: ${metric.title}`" @click="openGlossary(metric.key)">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.4"/><path d="M8 7.2V11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="5.1" r="0.7" fill="currentColor"/></svg>
+          <button
+            class="metric-info"
+            type="button"
+            :aria-label="`Глоссарий: ${metric.title}`"
+            @click="openGlossary(metric.key)"
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.4" />
+              <path d="M8 7.2V11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+              <circle cx="8" cy="5.1" r="0.7" fill="currentColor" />
+            </svg>
           </button>
         </article>
       </div>
@@ -409,11 +545,25 @@ useTelegramButtons(() => {
           <article v-for="metric in growthMetrics" :key="metric.key" class="metric">
             <button class="metric-open" type="button" @click="openMetric(metric.key)">
               <span>{{ metric.title }}</span>
-              <b>{{ metric.available ? formatMetric(metric) : '—' }}</b>
+              <b>{{ metric.available ? formatMetric(metric) : "—" }}</b>
               <em v-if="metricCaption(metric)">{{ metricCaption(metric) }}</em>
             </button>
-            <button class="metric-info" type="button" :aria-label="`Глоссарий: ${metric.title}`" @click="openGlossary(metric.key)">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.4"/><path d="M8 7.2V11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="5.1" r="0.7" fill="currentColor"/></svg>
+            <button
+              class="metric-info"
+              type="button"
+              :aria-label="`Глоссарий: ${metric.title}`"
+              @click="openGlossary(metric.key)"
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.4" />
+                <path
+                  d="M8 7.2V11"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                />
+                <circle cx="8" cy="5.1" r="0.7" fill="currentColor" />
+              </svg>
             </button>
           </article>
         </div>
@@ -424,12 +574,16 @@ useTelegramButtons(() => {
     </template>
 
     <template v-else-if="selected && step === 'metric'">
-      <button class="back" type="button" @click="step = 'summary'"><img :src="backIcon" alt="" width="20" height="20" /></button>
+      <button class="back" type="button" @click="step = 'summary'">
+        <img :src="backIcon" alt="" width="20" height="20" />
+      </button>
       <h1>{{ selected.title }}</h1>
       <p class="muted">{{ COPY[selected.key]?.en }}</p>
-      <p class="body">{{ COPY[selected.key]?.text ?? 'Как эта метрика считается в разборе.' }}</p>
+      <p class="body">{{ COPY[selected.key]?.text ?? "Как эта метрика считается в разборе." }}</p>
       <section class="card meter">
-        <div class="meter-top"><span>Твой результат</span><b>{{ formatMetric(selected) }}</b></div>
+        <div class="meter-top">
+          <span>Твой результат</span><b>{{ formatMetric(selected) }}</b>
+        </div>
         <div class="track"><i :style="{ width: `${ratio(selected)}%` }" /></div>
         <div class="meter-scale"><span>0%</span><span>порог</span><span>100%</span></div>
       </section>
@@ -437,34 +591,84 @@ useTelegramButtons(() => {
     </template>
 
     <template v-else-if="step === 'links'">
-      <button class="back" type="button" @click="route.query.links === '1' ? router.back() : route.query.link === '1' ? router.push('/scenarios') : (sheet = true, step = 'summary')"><img :src="backIcon" alt="" width="20" height="20" /></button>
+      <button
+        class="back"
+        type="button"
+        @click="
+          route.query.links === '1'
+            ? router.back()
+            : route.query.link === '1'
+              ? router.push('/scenarios')
+              : ((sheet = true), (step = 'summary'))
+        "
+      >
+        <img :src="backIcon" alt="" width="20" height="20" />
+      </button>
       <h1>Ссылка на разбор</h1>
       <p v-if="!links.length" class="muted">Ссылок пока нет.</p>
       <article v-for="item in links" :key="item.id" class="card stack">
-        <b>{{ negotiation?.scenario.title ?? 'Разбор' }}</b>
-        <p class="muted">{{ linkState(item) }} · до {{ new Date(item.expiresAt).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }}</p>
+        <b>{{ negotiation?.scenario.title ?? "Разбор" }}</b>
+        <p class="muted">
+          {{ linkState(item) }} · до
+          {{
+            new Date(item.expiresAt).toLocaleString("ru-RU", {
+              day: "numeric",
+              month: "short",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          }}
+        </p>
         <p class="link-url">{{ absoluteUrl(item.url) }}</p>
-        <button class="btn" type="button" :disabled="pending || item.revoked" @click="copyLink">{{ copied ? 'Ссылка скопирована' : 'Скопировать ссылку' }}</button>
-        <button v-if="!item.revoked && linkState(item) === 'активна'" class="btn ghost" type="button" @click="revoke(item)">Отозвать</button>
+        <button class="btn" type="button" :disabled="pending || item.revoked" @click="copyLink">
+          {{ copied ? "Ссылка скопирована" : "Скопировать ссылку" }}
+        </button>
+        <button
+          v-if="!item.revoked && linkState(item) === 'активна'"
+          class="btn ghost"
+          type="button"
+          @click="revoke(item)"
+        >
+          Отозвать
+        </button>
       </article>
     </template>
 
     <div v-if="sheet" class="sheet-backdrop" @click.self="sheet = false">
       <section class="sheet">
         <h2>Поделиться</h2>
-        <p class="muted">Увидит итоговый балл и «Итог сделки». «Мой рост» и транскрипт скрыты, пока их не включить.</p>
+        <p class="muted">
+          Увидит итоговый балл и «Итог сделки». «Мой рост» и транскрипт скрыты, пока их не включить.
+        </p>
         <p class="muted">Ссылка действует</p>
         <div class="ttl">
-          <button type="button" :class="{ on: ttlHours === 24 }" @click="ttlHours = 24">24 часа</button>
-          <button type="button" :class="{ on: ttlHours === 168 }" @click="ttlHours = 168">7 дней</button>
-          <button type="button" :class="{ on: ttlHours === 720 }" @click="ttlHours = 720">30 дней</button>
+          <button type="button" :class="{ on: ttlHours === 24 }" @click="ttlHours = 24">
+            24 часа
+          </button>
+          <button type="button" :class="{ on: ttlHours === 168 }" @click="ttlHours = 168">
+            7 дней
+          </button>
+          <button type="button" :class="{ on: ttlHours === 720 }" @click="ttlHours = 720">
+            30 дней
+          </button>
         </div>
         <label class="share-toggle">
           <span>Показать транскрипт в разработке<small>По умолчанию скрыт</small></span>
-          <button class="toggle" :class="{ on: includeTranscript }" type="button" @click="includeTranscript = !includeTranscript"><i /></button>
+          <button
+            class="toggle"
+            :class="{ on: includeTranscript }"
+            type="button"
+            @click="includeTranscript = !includeTranscript"
+          >
+            <i />
+          </button>
         </label>
-        <button class="btn tg-hide" type="button" :disabled="pending" @click="sendTelegram">Отправить в Telegram</button>
-        <button class="linkish" type="button" :disabled="pending" @click="copyLink">{{ copied ? 'Ссылка скопирована' : 'Скопировать ссылку' }}</button>
+        <button class="btn tg-hide" type="button" :disabled="pending" @click="sendTelegram">
+          Отправить в Telegram
+        </button>
+        <button class="linkish" type="button" :disabled="pending" @click="copyLink">
+          {{ copied ? "Ссылка скопирована" : "Скопировать ссылку" }}
+        </button>
       </section>
     </div>
   </main>

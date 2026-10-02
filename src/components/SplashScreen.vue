@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import logo from '@/assets/onboarding/logo.svg'
+import logo from "@/assets/onboarding/logo.svg";
 </script>
 
 <template>

@@ -1,25 +1,31 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import peaks from '@/assets/onboarding/peaks.svg'
-import { ApiError } from '@/api'
-import { useSessionStore } from '@/stores/session'
-import { readTelegramProfile, useTelegramButtons } from '@/telegram'
+import { computed, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import peaks from "@/assets/onboarding/peaks.svg";
+import { ApiError } from "@/api";
+import { useSessionStore } from "@/stores/session";
+import { readTelegramProfile, useTelegramButtons } from "@/telegram";
 
-const session = useSessionStore()
-const router = useRouter()
-const route = useRoute()
-const step = ref<'hero' | 'form'>('hero')
-const mode = ref<'up' | 'in'>('up')
-const login = ref('')
-const password = ref('')
-const error = ref('')
-const pending = ref(false)
-const nextPath = computed(() => (typeof route.query.next === 'string' ? route.query.next : session.returnPath))
-const fromTelegram = Boolean(readTelegramProfile())
+const session = useSessionStore();
+const router = useRouter();
+const route = useRoute();
+const step = ref<"hero" | "form">("hero");
+const mode = ref<"up" | "in">("up");
+const login = ref("");
+const password = ref("");
+const error = ref("");
+const pending = ref(false);
+const nextPath = computed(() =>
+  typeof route.query.next === "string" ? route.query.next : session.returnPath,
+);
+const fromTelegram = Boolean(readTelegramProfile());
 
 function submitAuth() {
-  void run(() => mode.value === 'in' ? session.signIn(login.value, password.value) : session.signUp(login.value, password.value))
+  void run(() =>
+    mode.value === "in"
+      ? session.signIn(login.value, password.value)
+      : session.signUp(login.value, password.value),
+  );
 }
 
 // useTelegramButtons(() => fromTelegram
@@ -32,20 +38,20 @@ function submitAuth() {
 //     })
 
 function afterAuth() {
-  if (session.greetOnEntry && session.onboarded) return { name: 'welcome' as const }
-  return session.onboarded ? nextPath.value : '/onboarding'
+  if (session.greetOnEntry && session.onboarded) return { name: "welcome" as const };
+  return session.onboarded ? nextPath.value : "/onboarding";
 }
 
 async function run(action: () => Promise<void>) {
-  error.value = ''
-  pending.value = true
+  error.value = "";
+  pending.value = true;
   try {
-    await action()
-    await router.replace(afterAuth())
+    await action();
+    await router.replace(afterAuth());
   } catch (caught) {
-    error.value = caught instanceof ApiError ? caught.message : 'Не получилось войти'
+    error.value = caught instanceof ApiError ? caught.message : "Не получилось войти";
   } finally {
-    pending.value = false
+    pending.value = false;
   }
 }
 </script>
@@ -56,25 +62,53 @@ async function run(action: () => Promise<void>) {
   <main v-else-if="step === 'hero'" class="screen bare bg-hero hero-sky">
     <div class="auth-copy">
       <h1>В переговорах тоже берут высоту</h1>
-      <p class="body">Тренируйся с ИИ-собеседниками<br>и поднимайся выше с каждой сделкой</p>
+      <p class="body">Тренируйся с ИИ-собеседниками<br />и поднимайся выше с каждой сделкой</p>
     </div>
     <img class="bg-peaks" :src="peaks" alt="" />
-    <button class="btn tg-hide btn-cta" type="button" @click="step = 'form'">Начать восхождение</button>
+    <button class="btn tg-hide btn-cta" type="button" @click="step = 'form'">
+      Начать восхождение
+    </button>
   </main>
 
   <main v-else class="screen bare auth-form">
     <h1>Добро пожаловать!</h1>
-    <p class="muted lead">Тренируйте переговоры в безопасной среде, пробуйте разные стратегии и получайте обратную связь после каждой сессии.</p>
-    <form class="auth-fields" @submit.prevent="run(() => mode === 'in' ? session.signIn(login, password) : session.signUp(login, password))">
+    <p class="muted lead">
+      Тренируйте переговоры в безопасной среде, пробуйте разные стратегии и получайте обратную связь
+      после каждой сессии.
+    </p>
+    <form
+      class="auth-fields"
+      @submit.prevent="
+        run(() =>
+          mode === 'in' ? session.signIn(login, password) : session.signUp(login, password),
+        )
+      "
+    >
       <label class="field">Логин<input v-model="login" autocomplete="username" required /></label>
-      <label class="field">Пароль<input v-model="password" type="password" autocomplete="current-password" minlength="6" required /></label>
+      <label class="field"
+        >Пароль<input
+          v-model="password"
+          type="password"
+          autocomplete="current-password"
+          minlength="6"
+          required
+      /></label>
       <p v-if="error" class="error">{{ error }}</p>
       <p class="muted auth-switch">
-        {{ mode === 'up' ? 'Уже есть аккаунт?' : 'Нет аккаунта?' }}
-        <button class="linkish" type="button" @click="mode = mode === 'up' ? 'in' : 'up'">{{ mode === 'up' ? 'Войти' : 'Регистрация' }}</button>
+        {{ mode === "up" ? "Уже есть аккаунт?" : "Нет аккаунта?" }}
+        <button class="linkish" type="button" @click="mode = mode === 'up' ? 'in' : 'up'">
+          {{ mode === "up" ? "Войти" : "Регистрация" }}
+        </button>
       </p>
       <div class="btn-actions">
-        <button class="btn ghost" type="button" :disabled="pending" @click="run(() => session.guest())">Пропустить</button>
+        <button
+          class="btn ghost"
+          type="button"
+          :disabled="pending"
+          @click="run(() => session.guest())"
+        >
+          Пропустить
+        </button>
         <button class="btn tg-hide" type="submit" :disabled="pending">Далее</button>
       </div>
     </form>

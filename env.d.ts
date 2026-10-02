@@ -1,52 +1,57 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  readonly VITE_API_MODE: 'mock' | 'http'
-  readonly VITE_API_BASE_URL: string
+  readonly VITE_API_MODE: "mock" | "http";
+  readonly VITE_API_BASE_URL: string;
 }
 
 interface ImportMeta {
-  readonly env: ImportMetaEnv
+  readonly env: ImportMetaEnv;
 }
 
 interface TelegramButton {
-  show: () => void
-  hide: () => void
-  onClick: (cb: () => void) => void
-  offClick: (cb: () => void) => void
+  show: () => void;
+  hide: () => void;
+  onClick: (cb: () => void) => void;
+  offClick: (cb: () => void) => void;
 }
 
 interface TelegramMainButton extends TelegramButton {
-  setText: (text: string) => void
-  enable: () => void
-  disable: () => void
-  showProgress: (leaveActive?: boolean) => void
-  hideProgress: () => void
-  setParams: (params: { color?: string; text_color?: string; is_active?: boolean; is_visible?: boolean }) => void
+  setText: (text: string) => void;
+  enable: () => void;
+  disable: () => void;
+  showProgress: (leaveActive?: boolean) => void;
+  hideProgress: () => void;
+  setParams: (params: {
+    color?: string;
+    text_color?: string;
+    is_active?: boolean;
+    is_visible?: boolean;
+  }) => void;
 }
 
 interface TelegramWebAppUser {
-  id: number
-  first_name: string
-  last_name?: string
-  username?: string
+  id: number;
+  first_name: string;
+  last_name?: string;
+  username?: string;
 }
 
 interface TelegramWebApp {
-  ready: () => void
-  expand: () => void
-  setHeaderColor: (color: string) => void
-  setBackgroundColor: (color: string) => void
-  setBottomBarColor?: (color: string) => void
-  BackButton: TelegramButton
-  MainButton: TelegramMainButton
-  close: () => void
-  openTelegramLink?: (url: string) => void
-  themeParams: Record<string, string | undefined>
-  initData: string
-  initDataUnsafe: { user?: TelegramWebAppUser }
+  ready: () => void;
+  expand: () => void;
+  setHeaderColor: (color: string) => void;
+  setBackgroundColor: (color: string) => void;
+  setBottomBarColor?: (color: string) => void;
+  BackButton: TelegramButton;
+  MainButton: TelegramMainButton;
+  close: () => void;
+  openTelegramLink?: (url: string) => void;
+  themeParams: Record<string, string | undefined>;
+  initData: string;
+  initDataUnsafe: { user?: TelegramWebAppUser };
 }
 
 interface Window {
-  Telegram?: { WebApp: TelegramWebApp }
+  Telegram?: { WebApp: TelegramWebApp };
 }

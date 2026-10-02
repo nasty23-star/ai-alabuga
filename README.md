@@ -6,16 +6,16 @@ Telegram Mini App: текстовый тренажёр переговоров. �
 
 ## Стек
 
-| | |
-|---|---|
-| UI | Vue 3, Composition API, `<script setup>` |
-| Состояние | Pinia |
-| Маршруты | Vue Router, `createWebHashHistory` |
-| Сборка | Vite 7, TypeScript (strict), `vue-tsc` |
-| Линтер | oxlint |
-| Пакеты | pnpm 11 |
-| Шрифт | Inter (Google Fonts) |
-| Оболочка | Telegram Web App (`telegram-web-app.js`) |
+|           |                                          |
+| --------- | ---------------------------------------- |
+| UI        | Vue 3, Composition API, `<script setup>` |
+| Состояние | Pinia                                    |
+| Маршруты  | Vue Router, `createWebHashHistory`       |
+| Сборка    | Vite 7, TypeScript (strict), `vue-tsc`   |
+| Линтер    | oxlint                                   |
+| Пакеты    | pnpm 11                                  |
+| Шрифт     | Inter (Google Fonts)                     |
+| Оболочка  | Telegram Web App (`telegram-web-app.js`) |
 
 Бэкенда в репозитории нет. Слой `Api` один: экраны не знают, мок это или HTTP.
 
@@ -43,4 +43,3 @@ pnpm deploy
 ```
 
 Скрипт `predeploy` сам запускает сборку. Каталог `dist` отдаётся через `gh-pages`.
-

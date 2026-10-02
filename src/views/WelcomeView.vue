@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
-import peaks from '@/assets/onboarding/peaks.svg'
+import { useRouter } from "vue-router";
+import peaks from "@/assets/onboarding/peaks.svg";
 
-const router = useRouter()
+const router = useRouter();
 
 function practice() {
-  void router.push('/scenarios')
+  void router.push("/scenarios");
 }
 
 // useTelegramButtons(() => ({ main: { text: 'Тренироваться', onClick: practice }, back: null }))
@@ -13,7 +13,7 @@ function practice() {
 
 <template>
   <main class="screen bare bg-hero hero-sky">
-    <div class="welcome-sky ">
+    <div class="welcome-sky">
       <h1>С возвращением!</h1>
       <img class="bg-peaks" :src="peaks" alt="" />
     </div>
